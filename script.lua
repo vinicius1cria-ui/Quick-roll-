@@ -1,29 +1,29 @@
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local lp = Players.LocalPlayer
 
--- Limpar UI antiga
-if lp.PlayerGui:FindFirstChild("HadesMinimal") then lp.PlayerGui.HadesMinimal:Destroy() end
+-- Limpeza de UI
+if lp.PlayerGui:FindFirstChild("HadesFix") then lp.PlayerGui.HadesFix:Destroy() end
 
 local sg = Instance.new("ScreenGui", lp.PlayerGui)
-sg.Name = "HadesMinimal"
+sg.Name = "HadesFix"
 
 local main = Instance.new("Frame", sg)
 main.Size = UDim2.new(0, 180, 0, 100)
 main.Position = UDim2.new(0.1, 0, 0.2, 0)
-main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 main.Active = true
 main.Draggable = true
 Instance.new("UICorner", main)
 
 local title = Instance.new("TextLabel", main)
 title.Size = UDim2.new(1, 0, 0, 30)
-title.Text = "HADES QUICK ROLL"
+title.Text = "QUICK ROLL FIX"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.BackgroundTransparency = 1
 title.Font = Enum.Font.GothamBold
-title.TextSize = 12
 
--- Efeito RGB discreto no título
+-- Efeito RGB
 spawn(function()
     while task.wait() do
         title.TextColor3 = Color3.fromHSV(tick() % 5 / 5, 1, 1)
@@ -33,26 +33,38 @@ end)
 local rollBtn = Instance.new("TextButton", main)
 rollBtn.Size = UDim2.new(0.9, 0, 0, 40)
 rollBtn.Position = UDim2.new(0.05, 0, 0, 45)
-rollBtn.Text = "ATIVAR QUICK ROLL"
-rollBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+rollBtn.Text = "ATIVAR"
+rollBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 rollBtn.TextColor3 = Color3.new(1, 1, 1)
 Instance.new("UICorner", rollBtn)
 
 local active = false
 rollBtn.MouseButton1Click:Connect(function()
     active = not active
-    rollBtn.Text = active and "QUICK ROLL: ON" or "ATIVAR QUICK ROLL"
-    rollBtn.BackgroundColor3 = active and Color3.fromRGB(150, 0, 0) or Color3.fromRGB(40, 40, 40)
+    rollBtn.Text = active and "ON (RÁPIDO)" or "ATIVAR"
+    rollBtn.BackgroundColor3 = active and Color3.fromRGB(200, 0, 0) or Color3.fromRGB(45, 45, 45)
     
-    -- Loop de Giro Rápido
     spawn(function()
         while active do
-            -- Procura o evento de Roll em todo o ReplicatedStorage
-            local remote = game:GetService("ReplicatedStorage"):FindFirstChild("Roll", true)
-            if remote and remote:IsA("RemoteEvent") then
-                remote:FireServer()
+            -- Tenta encontrar o evento de Roll por nome ou função
+            for _, v in pairs(ReplicatedStorage:GetDescendants()) do
+                if v:IsA("RemoteEvent") and (v.Name:find("Roll") or v.Name:find("Spin") or v.Name:find("Girar")) then
+                    v:FireServer()
+                end
             end
-            task.wait(0.05) -- Velocidade de Quick Roll
+            
+            -- Se o jogo usa botões na tela em vez de remotes diretos
+            pcall(function()
+                local gui = lp.PlayerGui:FindFirstChild("Main") or lp.PlayerGui:FindFirstChild("Gui")
+                local rollUI = gui:FindFirstChild("Roll", true) or gui:FindFirstChild("Spin", true)
+                if rollUI and rollUI:IsA("TextButton") then
+                    for _, connection in pairs(getconnections(rollUI.MouseButton1Click)) do
+                        connection:Fire()
+                    end
+                end
+            end)
+            
+            task.wait(0.1) -- Tempo seguro para o Quick Roll não dar erro
         end
     end)
 end)
