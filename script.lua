@@ -93,5 +93,5 @@ end
 
 -- 3. INTERFACE KING V3
 local sg = Instance.new("ScreenGui", lp.PlayerGui)
-sg.Name = "KingV3Mobile"
+sg.Name = "King v7"
 sg.
