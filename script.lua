@@ -1,8 +1,8 @@
 --[[
-    KING V3 - MOBILE SHIFT-LOCK (NO FOV VERSION)
-    - Aimbot: Camera Lock-on (Sem Bola Roxa)
-    - Anti-AFK: Ativo
-    - ESP: Neon
+    KING V3 - FULL ESP & LOCK (MOBILE)
+    - Aimbot: Invisible Lock
+    - ESP: Neon + Nome + Vida (HP)
+    - Tema: Gojo Satoru / Vazio Roxo
 ]]
 
 local Players = game:GetService("Players")
@@ -12,7 +12,8 @@ local RunService = game:GetService("RunService")
 
 _G.AimbotEnabled = false
 _G.EspActive = false
-local FOV_RADIUS = 150 -- Distância da trava (invisível)
+local FOV_RADIUS = 150 
+local minimized = false
 
 -- 1. FUNÇÃO DE BUSCA DO ALVO
 local function getClosestPlayer()
@@ -38,79 +39,59 @@ local function getClosestPlayer()
     return target
 end
 
--- 2. LOOP DE TRAVA (SEM DESENHO NA TELA)
 RunService.Heartbeat:Connect(function()
     if _G.AimbotEnabled then
         local targetHead = getClosestPlayer()
         if targetHead then
-            -- Força a mira na cabeça ignorando o Shift Lock
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetHead.Position)
         end
     end
 end)
 
+-- 2. FUNÇÃO PARA CRIAR NOME E VIDA (TEXT ESP)
+local function createTextESP(player)
+    local char = player.Character or player.CharacterAdded:Wait()
+    local head = char:WaitForChild("Head", 5)
+    if not head then return end
+
+    -- Remove antigo se existir
+    if head:FindFirstChild("KingTextESP") then head.KingTextESP:Destroy() end
+
+    local billboard = Instance.new("BillboardGui", head)
+    billboard.Name = "KingTextESP"
+    billboard.Adornee = head
+    billboard.Size = UDim2.new(0, 100, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+
+    local textLabel = Instance.new("TextLabel", billboard)
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextColor3 = Color3.new(1, 1, 1)
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextSize = 14
+    textLabel.TextStrokeTransparency = 0
+
+    -- Atualização em Tempo Real (Vida e Distância)
+    task.spawn(function()
+        while char and char:Parent() and _G.EspActive do
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                local hp = math.floor(hum.Health)
+                textLabel.Text = string.format("%s\n[HP: %d]", player.Name, hp)
+                
+                -- Cor do texto baseada na vida
+                if hp > 50 then textLabel.TextColor3 = Color3.new(0, 1, 0) -- Verde
+                elseif hp > 20 then textLabel.TextColor3 = Color3.new(1, 0.5, 0) -- Laranja
+                else textLabel.TextColor3 = Color3.new(1, 0, 0) end -- Vermelho
+            end
+            task.wait(0.1)
+        end
+        billboard:Destroy()
+    end)
+end
+
 -- 3. INTERFACE KING V3
 local sg = Instance.new("ScreenGui", lp.PlayerGui)
 sg.Name = "KingV3Mobile"
-sg.ResetOnSpawn = false
-
-local main = Instance.new("Frame", sg)
-main.Size = UDim2.new(0, 200, 0, 180)
-main.Position = UDim2.new(0.05, 0, 0.4, 0)
-main.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
-main.Active = true
-main.Draggable = true
-Instance.new("UICorner", main)
-local stroke = Instance.new("UIStroke", main)
-stroke.Thickness = 2
-stroke.Color = Color3.fromRGB(138, 43, 226)
-
-local title = Instance.new("TextLabel", main)
-title.Size = UDim2.new(1, 0, 0, 40)
-title.Text = "KING V3 - CLEAN"
-title.TextColor3 = Color3.new(1,1,1)
-title.Font = Enum.Font.GothamBold
-title.BackgroundTransparency = 1
-
-local function createBtn(text, pos, callback)
-    local btn = Instance.new("TextButton", main)
-    btn.Size = UDim2.new(0.85, 0, 0, 35)
-    btn.Position = pos
-    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Text = text
-    btn.Font = Enum.Font.GothamSemibold
-    Instance.new("UICorner", btn)
-    btn.MouseButton1Click:Connect(function() callback(btn) end)
-    return btn
-end
-
-createBtn("LOCK AIMBOT: OFF", UDim2.new(0.075, 0, 0.3, 0), function(self)
-    _G.AimbotEnabled = not _G.AimbotEnabled
-    self.Text = _G.AimbotEnabled and "LOCK AIMBOT: ON" or "LOCK AIMBOT: OFF"
-    self.BackgroundColor3 = _G.AimbotEnabled and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(30, 30, 40)
-end)
-
-createBtn("ESP NEON: OFF", UDim2.new(0.075, 0, 0.6, 0), function(self)
-    _G.EspActive = not _G.EspActive
-    self.Text = _G.EspActive and "ESP NEON: ON" or "ESP NEON: OFF"
-    self.BackgroundColor3 = _G.EspActive and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(30, 30, 40)
-end)
-
--- 4. LOOP ESP
-task.spawn(function()
-    while task.wait(1) do
-        if _G.EspActive then
-            for _, p in pairs(Players:GetPlayers()) do
-                if p ~= lp and p.Character then
-                    local hl = p.Character:FindFirstChild("KingHighlight") or Instance.new("Highlight", p.Character)
-                    hl.Name = "KingHighlight"
-                    hl.FillColor = (p.Team == lp.Team) and Color3.new(0,1,1) or Color3.fromRGB(138, 43, 226)
-                    hl.FillTransparency = 0.5
-                end
-            end
-        end
-        game:GetService("VirtualUser"):CaptureController()
-        game:GetService("VirtualUser"):ClickButton2(Vector2.new())
-    end
-end)
+sg.
