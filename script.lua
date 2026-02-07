@@ -1,67 +1,34 @@
 --[[
-    KING V3 - ULTIMATE EDITION
-    - AIMBOT: TODOS OS TIMES (AGRESSIVO 0.25)
-    - ESP: BODY HIGHLIGHT ROXO (ALWAYS ON TOP)
-    - UI: BOTÃO MINIMIZAR + ANTI-RESET (FICA AO MORRER)
+    KING V3 - BASE ZERO + SPEED + JUMP + ESP
 ]]
 
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
-_G.AimbotEnabled = false
+-- CONFIGURAÇÕES
+_G.SpeedEnabled = false
+_G.SpeedValue = 50
+_G.JumpEnabled = false
+_G.JumpValue = 100
+_G.DoubleJumpEnabled = false
 _G.EspActive = false
-local SMOOTHNESS = 0.25 
-local minimized = false
 
--- COR RGB ROXA ESTILO GOJO
-local function getPurpleRGB()
-    local t = tick() * 2.5
-    return Color3.fromHSV(0.78, 0.9, 0.4 + math.sin(t) * 0.6)
-end
+-- Variáveis de controle para o pulo duplo
+local canDoubleJump = false
+local hasDoubleJumped = false
 
--- AIMBOT (FOCO EM TODOS)
-local function getClosestPlayer()
-    local target = nil
-    local dist = 200
-    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    
-    for _, v in pairs(Players:GetPlayers()) do
-        if v ~= lp and v.Character and v.Character:FindFirstChild("Head") then
-            local hum = v.Character:FindFirstChildOfClass("Humanoid")
-            if hum and hum.Health > 0 then
-                local pos, onScreen = Camera:WorldToViewportPoint(v.Character.Head.Position)
-                if onScreen then
-                    local mouseDist = (Vector2.new(pos.X, pos.Y) - screenCenter).Magnitude
-                    if mouseDist < dist then
-                        target = v.Character.Head
-                        dist = mouseDist
-                    end
-                end
-            end
-        end
-    end
-    return target
-end
+-- 1. LIMPEZA
+if lp.PlayerGui:FindFirstChild("KingV3_Base") then lp.PlayerGui.KingV3_Base:Destroy() end
 
-RunService.RenderStepped:Connect(function()
-    if _G.AimbotEnabled then
-        local targetHead = getClosestPlayer()
-        if targetHead then
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, targetHead.Position), SMOOTHNESS)
-        end
-    end
-end)
-
--- INTERFACE COM ANTI-RESET
-if lp.PlayerGui:FindFirstChild("KingV3_Mobile") then lp.PlayerGui.KingV3_Mobile:Destroy() end
+-- 2. INTERFACE (ANTI-RESET)
 local sg = Instance.new("ScreenGui", lp.PlayerGui)
-sg.Name = "KingV3_Mobile"
-sg.ResetOnSpawn = false -- ISSO FAZ O MENU CONTINUAR QUANDO MORRES
+sg.Name = "KingV3_Base"
+sg.ResetOnSpawn = false
 
 local main = Instance.new("Frame", sg)
-main.Size = UDim2.new(0, 220, 0, 210)
+main.Size = UDim2.new(0, 220, 0, 310) -- Aumentado para caber mais botões
 main.Position = UDim2.new(0.05, 0, 0.4, 0)
 main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 main.Active = true
@@ -70,18 +37,12 @@ Instance.new("UICorner", main)
 
 local stroke = Instance.new("UIStroke", main)
 stroke.Thickness = 3
-task.spawn(function()
-    while main and main.Parent do
-        stroke.Color = getPurpleRGB()
-        task.wait(0.05)
-    end
-end)
+stroke.Color = Color3.fromRGB(100, 0, 255)
 
--- TÍTULO
 local title = Instance.new("TextLabel", main)
 title.Size = UDim2.new(1, -40, 0, 40)
 title.Position = UDim2.new(0, 10, 0, 0)
-title.Text = "KING V3 RGB"
+title.Text = "KING V3 - MULTI"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 16
@@ -103,43 +64,65 @@ content.Size = UDim2.new(1, 0, 1, -45)
 content.Position = UDim2.new(0, 0, 0, 45)
 content.BackgroundTransparency = 1
 
+local minimized = false
 minBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
     content.Visible = not minimized
-    if minimized then
-        main:TweenSize(UDim2.new(0, 220, 0, 40), "Out", "Quad", 0.3, true)
-        minBtn.Text = "+"
-    else
-        main:TweenSize(UDim2.new(0, 220, 0, 210), "Out", "Quad", 0.3, true)
-        minBtn.Text = "-"
-    end
+    main:TweenSize(minimized and UDim2.new(0, 220, 0, 40) or UDim2.new(0, 220, 0, 310), "Out", "Quad", 0.3, true)
+    minBtn.Text = minimized and "+" or "-"
 end)
 
-local function makeBtn(text, y, callback)
+-- FUNÇÃO CRIAR BOTÃO
+local function createBtn(text, y, callback)
     local btn = Instance.new("TextButton", content)
     btn.Size = UDim2.new(0.9, 0, 0, 40)
     btn.Position = UDim2.new(0.05, 0, 0, y)
-    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
     btn.Text = text
-    btn.TextColor3 = Color3.new(1,1,1)
+    btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 12
     Instance.new("UICorner", btn)
     btn.MouseButton1Click:Connect(function() callback(btn) end)
+    return btn
 end
 
-makeBtn("LOCK ALL: OFF", 10, function(self)
-    _G.AimbotEnabled = not _G.AimbotEnabled
-    self.Text = _G.AimbotEnabled and "LOCK ALL: ON" or "LOCK ALL: OFF"
-    self.BackgroundColor3 = _G.AimbotEnabled and Color3.fromRGB(80, 0, 150) or Color3.fromRGB(30, 30, 35)
+-- 3. LOGICA SPEED & JUMP
+RunService.Stepped:Connect(function()
+    if lp.Character and lp.Character:FindFirstChild("Humanoid") then
+        local hum = lp.Character.Humanoid
+        -- Speed
+        if _G.SpeedEnabled then hum.WalkSpeed = _G.SpeedValue else hum.WalkSpeed = 16 end
+        -- Jump Power
+        if _G.JumpEnabled then 
+            hum.UseJumpPower = true 
+            hum.JumpPower = _G.JumpValue 
+        else 
+            hum.JumpPower = 50 
+        end
+    end
 end)
 
-makeBtn("BODY ESP: OFF", 60, function(self)
-    _G.EspActive = not _G.EspActive
-    self.Text = _G.EspActive and "BODY ESP: ON" or "BODY ESP: OFF"
-    self.BackgroundColor3 = _G.EspActive and Color3.fromRGB(80, 0, 150) or Color3.fromRGB(30, 30, 35)
+-- 4. LOGICA DOUBLE JUMP
+UserInputService.JumpRequest:Connect(function()
+    if _G.DoubleJumpEnabled and lp.Character and lp.Character:FindFirstChild("Humanoid") then
+        local hum = lp.Character.Humanoid
+        if hum:GetState() == Enum.HumanoidStateType.Freefall and not hasDoubleJumped then
+            hasDoubleJumped = true
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
 end)
 
--- LOOP ESP DE CORPO
+lp.CharacterAdded:Connect(function(char)
+    char:WaitForChild("Humanoid").StateChanged:Connect(function(_, newState)
+        if newState == Enum.HumanoidStateType.Landed then
+            hasDoubleJumped = false
+        end
+    end)
+end)
+
+-- 5. LOGICA ESP ALL TEAMS
 RunService.Heartbeat:Connect(function()
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= lp and p.Character then
@@ -150,11 +133,36 @@ RunService.Heartbeat:Connect(function()
                     hl = Instance.new("Highlight", char)
                     hl.Name = "KingHL"
                 end
-                hl.FillColor = getPurpleRGB()
+                hl.FillColor = Color3.fromRGB(100, 0, 255)
                 hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
             else
                 if hl then hl:Destroy() end
             end
         end
     end
+end)
+
+-- 6. BOTÕES
+createBtn("SPEED: OFF", 10, function(btn)
+    _G.SpeedEnabled = not _G.SpeedEnabled
+    btn.Text = _G.SpeedEnabled and "SPEED: ON" or "SPEED: OFF"
+    btn.BackgroundColor3 = _G.SpeedEnabled and Color3.fromRGB(100,0,255) or Color3.fromRGB(30,30,40)
+end)
+
+createBtn("JUMP POWER: OFF", 60, function(btn)
+    _G.JumpEnabled = not _G.JumpEnabled
+    btn.Text = _G.JumpEnabled and "JUMP POWER: ON" or "JUMP POWER: OFF"
+    btn.BackgroundColor3 = _G.JumpEnabled and Color3.fromRGB(100,0,255) or Color3.fromRGB(30,30,40)
+end)
+
+createBtn("DOUBLE JUMP: OFF", 110, function(btn)
+    _G.DoubleJumpEnabled = not _G.DoubleJumpEnabled
+    btn.Text = _G.DoubleJumpEnabled and "DOUBLE JUMP: ON" or "DOUBLE JUMP: OFF"
+    btn.BackgroundColor3 = _G.DoubleJumpEnabled and Color3.fromRGB(100,0,255) or Color3.fromRGB(30,30,40)
+end)
+
+createBtn("ESP ALL TEAMS: OFF", 160, function(btn)
+    _G.EspActive = not _G.EspActive
+    btn.Text = _G.EspActive and "ESP: ON" or "ESP: OFF"
+    btn.BackgroundColor3 = _G.EspActive and Color3.fromRGB(100,0,255) or Color3.fromRGB(30,30,40)
 end)
