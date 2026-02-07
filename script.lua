@@ -1,8 +1,8 @@
 --[[
-    KING V3 - MOBILE SHIFT-LOCK FIX (CLEAN VERSION)
-    - Aimbot: Camera Force Lock (Sem Círculo/FOV Visível)
-    - Tema: Gojo Satoru / Vazio Roxo
-    - Nome: King V3
+    KING V3 - MOBILE SHIFT-LOCK (NO FOV VERSION)
+    - Aimbot: Camera Lock-on (Sem Bola Roxa)
+    - Anti-AFK: Ativo
+    - ESP: Neon
 ]]
 
 local Players = game:GetService("Players")
@@ -12,9 +12,9 @@ local RunService = game:GetService("RunService")
 
 _G.AimbotEnabled = false
 _G.EspActive = false
-local FOV_RADIUS = 150 -- A distância da trava continua a mesma, só não aparece a bola
+local FOV_RADIUS = 150 -- Distância da trava (invisível)
 
--- 1. FUNÇÃO DE BUSCA (ESTRATEGIA MOBILE)
+-- 1. FUNÇÃO DE BUSCA DO ALVO
 local function getClosestPlayer()
     local target = nil
     local dist = FOV_RADIUS
@@ -38,12 +38,12 @@ local function getClosestPlayer()
     return target
 end
 
--- 2. LOOP DE TRAVA (Roda em segundo plano sem poluir a tela)
+-- 2. LOOP DE TRAVA (SEM DESENHO NA TELA)
 RunService.Heartbeat:Connect(function()
     if _G.AimbotEnabled then
         local targetHead = getClosestPlayer()
         if targetHead then
-            -- Força a câmera a olhar para o alvo mesmo com Shift Lock
+            -- Força a mira na cabeça ignorando o Shift Lock
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetHead.Position)
         end
     end
@@ -57,7 +57,7 @@ sg.ResetOnSpawn = false
 local main = Instance.new("Frame", sg)
 main.Size = UDim2.new(0, 200, 0, 180)
 main.Position = UDim2.new(0.05, 0, 0.4, 0)
-main.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+main.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
 main.Active = true
 main.Draggable = true
 Instance.new("UICorner", main)
@@ -97,7 +97,7 @@ createBtn("ESP NEON: OFF", UDim2.new(0.075, 0, 0.6, 0), function(self)
     self.BackgroundColor3 = _G.EspActive and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(30, 30, 40)
 end)
 
--- 4. ESP LOOP
+-- 4. LOOP ESP
 task.spawn(function()
     while task.wait(1) do
         if _G.EspActive then
@@ -110,5 +110,7 @@ task.spawn(function()
                 end
             end
         end
+        game:GetService("VirtualUser"):CaptureController()
+        game:GetService("VirtualUser"):ClickButton2(Vector2.new())
     end
 end)
