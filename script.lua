@@ -1,42 +1,43 @@
 --[[
-    KING V3 - GOD MODE EDITION (PRISON LIFE)
-    - Aimbot: Lock-on Head (Gruda na Cabeça)
-    - FOV: Círculo Roxo Neon
-    - ESP: Neon Team Based
+    KING V3 - MOBILE SHIFT-LOCK FIX
+    - Aimbot: Camera Force Lock (Gruda com Shift Lock)
+    - Tema: Gojo Satoru / Vazio Roxo
 ]]
 
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
-local Mouse = lp:GetMouse()
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 
 _G.AimbotEnabled = false
 _G.EspActive = false
-local FOV_RADIUS = 150 -- Tamanho do círculo de trava
+local FOV_RADIUS = 150 
 
--- 1. DESENHO DO CÍRCULO (CROSSHAIR)
+-- 1. CÍRCULO DO FOV
 local fov_circle = Drawing.new("Circle")
 fov_circle.Thickness = 2
-fov_circle.NumSides = 100
+fov_circle.NumSides = 64
 fov_circle.Radius = FOV_RADIUS
-fov_circle.Filled = false
 fov_circle.Visible = false
 fov_circle.Color = Color3.fromRGB(138, 43, 226)
 
--- 2. FUNÇÃO DE TRAVA NA CABEÇA
+-- 2. FUNÇÃO DE BUSCA (IGNORA PAREDES PARA GRUDAR MELHOR)
 local function getClosestPlayer()
     local target = nil
     local dist = FOV_RADIUS
+    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     for _, v in pairs(Players:GetPlayers()) do
         if v ~= lp and v.Team ~= lp.Team and v.Character and v.Character:FindFirstChild("Head") then
-            local pos, onScreen = Camera:WorldToViewportPoint(v.Character.Head.Position)
-            if onScreen then
-                local mouseDist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
-                if mouseDist < dist then
-                    target = v.Character.Head
-                    dist = mouseDist
+            local hum = v.Character:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then
+                local pos, onScreen = Camera:WorldToViewportPoint(v.Character.Head.Position)
+                if onScreen then
+                    local mouseDist = (Vector2.new(pos.X, pos.Y) - screenCenter).Magnitude
+                    if mouseDist < dist then
+                        target = v.Character.Head
+                        dist = mouseDist
+                    end
                 end
             end
         end
@@ -44,27 +45,28 @@ local function getClosestPlayer()
     return target
 end
 
--- LOOP DO AIMBOT (Roda a cada frame)
-RunService.RenderStepped:Connect(function()
-    fov_circle.Position = Vector2.new(Mouse.X, Mouse.Y + 36)
+-- LOOP DE FORÇA BRUTA ( HEARTBEAT É MELHOR PARA SHIFT LOCK )
+RunService.Heartbeat:Connect(function()
+    fov_circle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     
     if _G.AimbotEnabled then
-        local head = getClosestPlayer()
-        if head then
-            -- Trava direta na cabeça (Ajuste de 0.6 para ser mais forte que o anterior)
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, head.Position)
+        local targetHead = getClosestPlayer()
+        if targetHead then
+            -- AQUI ESTÁ O SEGREDO: Forçamos o CFrame da câmera para olhar o alvo
+            -- Isso sobrepõe o movimento do Shift Lock
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetHead.Position)
         end
     end
 end)
 
 -- 3. INTERFACE KING V3
 local sg = Instance.new("ScreenGui", lp.PlayerGui)
-sg.Name = "KingV3"
+sg.Name = "KingV3Mobile"
 sg.ResetOnSpawn = false
 
 local main = Instance.new("Frame", sg)
-main.Size = UDim2.new(0, 220, 0, 220)
-main.Position = UDim2.new(0.5, -110, 0.4, 0)
+main.Size = UDim2.new(0, 200, 0, 180)
+main.Position = UDim2.new(0.05, 0, 0.4, 0)
 main.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
 main.Active = true
 main.Draggable = true
@@ -73,32 +75,51 @@ local stroke = Instance.new("UIStroke", main)
 stroke.Thickness = 2
 stroke.Color = Color3.fromRGB(138, 43, 226)
 
--- ÍCONE E TÍTULO
-local icon = Instance.new("ImageLabel", main)
-icon.Size = UDim2.new(0, 35, 0, 35)
-icon.Position = UDim2.new(0, 10, 0, 5)
-icon.BackgroundTransparency = 1
-icon.Image = "rbxassetid://15115501179"
-Instance.new("UICorner", icon)
-
 local title = Instance.new("TextLabel", main)
-title.Size = UDim2.new(1, -50, 0, 45)
-title.Position = UDim2.new(0, 50, 0, 0)
-title.Text = "KING V3 - LOCK"
+title.Size = UDim2.new(1, 0, 0, 40)
+title.Text = "KING V3 - SHIFT FIX"
 title.TextColor3 = Color3.new(1,1,1)
 title.Font = Enum.Font.GothamBold
-title.TextSize = 18
-title.TextXAlignment = Enum.TextXAlignment.Left
 title.BackgroundTransparency = 1
 
--- BOTÕES
 local function createBtn(text, pos, callback)
     local btn = Instance.new("TextButton", main)
-    btn.Size = UDim2.new(0.85, 0, 0, 40)
+    btn.Size = UDim2.new(0.85, 0, 0, 35)
     btn.Position = pos
     btn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Text = text
     btn.Font = Enum.Font.GothamSemibold
-    Instance
-    
+    Instance.new("UICorner", btn)
+    btn.MouseButton1Click:Connect(function() callback(btn) end)
+    return btn
+end
+
+createBtn("LOCK AIMBOT: OFF", UDim2.new(0.075, 0, 0.3, 0), function(self)
+    _G.AimbotEnabled = not _G.AimbotEnabled
+    fov_circle.Visible = _G.AimbotEnabled
+    self.Text = _G.AimbotEnabled and "LOCK AIMBOT: ON" or "LOCK AIMBOT: OFF"
+    self.BackgroundColor3 = _G.AimbotEnabled and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(30, 30, 40)
+end)
+
+createBtn("ESP NEON: OFF", UDim2.new(0.075, 0, 0.6, 0), function(self)
+    _G.EspActive = not _G.EspActive
+    self.Text = _G.EspActive and "ESP NEON: ON" or "ESP NEON: OFF"
+    self.BackgroundColor3 = _G.EspActive and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(30, 30, 40)
+end)
+
+-- 4. ESP LOOP
+task.spawn(function()
+    while task.wait(1) do
+        if _G.EspActive then
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= lp and p.Character then
+                    local hl = p.Character:FindFirstChild("KingHighlight") or Instance.new("Highlight", p.Character)
+                    hl.Name = "KingHighlight"
+                    hl.FillColor = (p.Team == lp.Team) and Color3.new(0,1,1) or Color3.fromRGB(138, 43, 226)
+                    hl.FillTransparency = 0.5
+                end
+            end
+        end
+    end
+end)
