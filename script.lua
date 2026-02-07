@@ -1,7 +1,8 @@
 --[[
-    KING V3 - MOBILE SHIFT-LOCK FIX
-    - Aimbot: Camera Force Lock (Gruda com Shift Lock)
+    KING V3 - MOBILE SHIFT-LOCK FIX (CLEAN VERSION)
+    - Aimbot: Camera Force Lock (Sem Círculo/FOV Visível)
     - Tema: Gojo Satoru / Vazio Roxo
+    - Nome: King V3
 ]]
 
 local Players = game:GetService("Players")
@@ -11,17 +12,9 @@ local RunService = game:GetService("RunService")
 
 _G.AimbotEnabled = false
 _G.EspActive = false
-local FOV_RADIUS = 150 
+local FOV_RADIUS = 150 -- A distância da trava continua a mesma, só não aparece a bola
 
--- 1. CÍRCULO DO FOV
-local fov_circle = Drawing.new("Circle")
-fov_circle.Thickness = 2
-fov_circle.NumSides = 64
-fov_circle.Radius = FOV_RADIUS
-fov_circle.Visible = false
-fov_circle.Color = Color3.fromRGB(138, 43, 226)
-
--- 2. FUNÇÃO DE BUSCA (IGNORA PAREDES PARA GRUDAR MELHOR)
+-- 1. FUNÇÃO DE BUSCA (ESTRATEGIA MOBILE)
 local function getClosestPlayer()
     local target = nil
     local dist = FOV_RADIUS
@@ -45,15 +38,12 @@ local function getClosestPlayer()
     return target
 end
 
--- LOOP DE FORÇA BRUTA ( HEARTBEAT É MELHOR PARA SHIFT LOCK )
+-- 2. LOOP DE TRAVA (Roda em segundo plano sem poluir a tela)
 RunService.Heartbeat:Connect(function()
-    fov_circle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    
     if _G.AimbotEnabled then
         local targetHead = getClosestPlayer()
         if targetHead then
-            -- AQUI ESTÁ O SEGREDO: Forçamos o CFrame da câmera para olhar o alvo
-            -- Isso sobrepõe o movimento do Shift Lock
+            -- Força a câmera a olhar para o alvo mesmo com Shift Lock
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetHead.Position)
         end
     end
@@ -77,7 +67,7 @@ stroke.Color = Color3.fromRGB(138, 43, 226)
 
 local title = Instance.new("TextLabel", main)
 title.Size = UDim2.new(1, 0, 0, 40)
-title.Text = "KING V3 - SHIFT FIX"
+title.Text = "KING V3 - CLEAN"
 title.TextColor3 = Color3.new(1,1,1)
 title.Font = Enum.Font.GothamBold
 title.BackgroundTransparency = 1
@@ -97,7 +87,6 @@ end
 
 createBtn("LOCK AIMBOT: OFF", UDim2.new(0.075, 0, 0.3, 0), function(self)
     _G.AimbotEnabled = not _G.AimbotEnabled
-    fov_circle.Visible = _G.AimbotEnabled
     self.Text = _G.AimbotEnabled and "LOCK AIMBOT: ON" or "LOCK AIMBOT: OFF"
     self.BackgroundColor3 = _G.AimbotEnabled and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(30, 30, 40)
 end)
