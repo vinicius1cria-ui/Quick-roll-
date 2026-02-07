@@ -1,122 +1,147 @@
 --[[
-    HADES RNG - GOJO EDITION HUB (VERSÃO CORRIGIDA)
-    - ESP não some ao morrer
-    - Botão Ligar/Desligar funcionando
+    KING V3 - THE HONORED ONE
+    - Tema: Gojo Satoru (Vazio Roxo)
+    - Funções: ESP Neon (Team Color) & Anti-AFK
+    - Sistema de Minimizar Incluso
 ]]
 
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
-local RS = game:GetService("ReplicatedStorage")
 local VU = game:GetService("VirtualUser")
 
--- VARIÁVEIS DE CONTROLE
-_G.Rolling = false
 _G.EspActive = false
+local minimized = false
 
--- 1. INTERFACE
+-- 1. INTERFACE PRINCIPAL
 local sg = Instance.new("ScreenGui", lp.PlayerGui)
-sg.Name = "GojoHub"
-sg.ResetOnSpawn = false -- Para o menu não sumir quando VOCÊ morrer
+sg.Name = "KingV3"
+sg.ResetOnSpawn = false
 
 local main = Instance.new("Frame", sg)
-main.Size = UDim2.new(0, 220, 0, 280)
+main.Name = "MainFrame"
+main.Size = UDim2.new(0, 220, 0, 200)
 main.Position = UDim2.new(0.5, -110, 0.4, 0)
-main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+main.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+main.BorderSizePixel = 0
 main.Active = true
 main.Draggable = true
 Instance.new("UICorner", main)
 
 local stroke = Instance.new("UIStroke", main)
 stroke.Thickness = 2
-stroke.Color = Color3.fromRGB(138, 43, 226)
+stroke.Color = Color3.fromRGB(138, 43, 226) -- Neon Roxo
 
+-- ÍCONE DO GOJO
+local icon = Instance.new("ImageLabel", main)
+icon.Size = UDim2.new(0, 35, 0, 35)
+icon.Position = UDim2.new(0, 10, 0, 5)
+icon.BackgroundTransparency = 1
+icon.Image = "rbxassetid://15115501179" -- Imagem épica do Gojo
+Instance.new("UICorner", icon)
+
+-- TÍTULO KING V3
 local title = Instance.new("TextLabel", main)
-title.Size = UDim2.new(1, 0, 0, 40)
-title.Text = "PURPLE HUB v2"
+title.Size = UDim2.new(1, -80, 0, 45)
+title.Position = UDim2.new(0, 50, 0, 0)
+title.Text = "KING V3"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.TextXAlignment = Enum.TextXAlignment.Left
 title.BackgroundTransparency = 1
 
--- 2. FUNÇÃO PARA CRIAR HIGHLIGHT (O ESP)
+-- BOTÃO MINIMIZAR
+local minBtn = Instance.new("TextButton", main)
+minBtn.Size = UDim2.new(0, 30, 0, 30)
+minBtn.Position = UDim2.new(1, -35, 0, 7)
+minBtn.Text = "-"
+minBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+minBtn.TextColor3 = Color3.fromRGB(138, 43, 226)
+minBtn.Font = Enum.Font.GothamBold
+minBtn.TextSize = 20
+Instance.new("UICorner", minBtn)
+
+-- Conteúdo do Menu (para sumir ao minimizar)
+local content = Instance.new("Frame", main)
+content.Size = UDim2.new(1, 0, 1, -50)
+content.Position = UDim2.new(0, 0, 0, 50)
+content.BackgroundTransparency = 1
+
+-- LOGICA DE MINIMIZAR
+minBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    if minimized then
+        main:TweenSize(UDim2.new(0, 220, 0, 45), "Out", "Quad", 0.3, true)
+        content.Visible = false
+        minBtn.Text = "+"
+    else
+        main:TweenSize(UDim2.new(0, 220, 0, 200), "Out", "Quad", 0.3, true)
+        content.Visible = true
+        minBtn.Text = "-"
+    end
+end)
+
+-- 2. FUNÇÃO ESP (FIXED)
 local function applyHighlight(player)
     local function create()
+        if not _G.EspActive then return end
         local char = player.Character or player.CharacterAdded:Wait()
-        if not char then return end
+        task.wait(0.1)
         
-        -- Remove antigo se existir
-        local old = char:FindFirstChild("GojoHighlight")
-        if old then old:Destroy() end
-        
-        if _G.EspActive then
-            local hl = Instance.new("Highlight")
-            hl.Name = "GojoHighlight"
-            hl.Parent = char
-            hl.FillTransparency = 0.5
-            hl.OutlineTransparency = 0
-            
-            -- Cor por Time
-            if player.Team == lp.Team then
-                hl.FillColor = Color3.fromRGB(0, 255, 255) -- Azul Aliado
-                hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-            else
-                hl.FillColor = Color3.fromRGB(138, 43, 226) -- Roxo Inimigo
-                hl.OutlineColor = Color3.fromRGB(255, 0, 255)
+        local hl = char:FindFirstChild("KingHighlight") or Instance.new("Highlight", char)
+        hl.Name = "KingHighlight"
+        hl.FillTransparency = 0.5
+        hl.OutlineTransparency = 0
+        hl.FillColor = (player.Team == lp.Team) and Color3.fromRGB(0, 255, 255) or Color3.fromRGB(138, 43, 226)
+        hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+    end
+    player.CharacterAdded:Connect(create)
+    create()
+end
+
+-- 3. BOTÃO ESP
+local espBtn = Instance.new("TextButton", content)
+espBtn.Size = UDim2.new(0.85, 0, 0, 40)
+espBtn.Position = UDim2.new(0.075, 0, 0.1, 0)
+espBtn.Text = "ESP NEON: OFF"
+espBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+espBtn.TextColor3 = Color3.new(1, 1, 1)
+espBtn.Font = Enum.Font.GothamSemibold
+Instance.new("UICorner", espBtn)
+
+espBtn.MouseButton1Click:Connect(function()
+    _G.EspActive = not _G.EspActive
+    espBtn.Text = _G.EspActive and "ESP NEON: ON" or "ESP NEON: OFF"
+    espBtn.BackgroundColor3 = _G.EspActive and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(30, 30, 40)
+    
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= lp then
+            if _G.EspActive then applyHighlight(p) 
+            else 
+                local h = p.Character and p.Character:FindFirstChild("KingHighlight")
+                if h then h:Destroy() end
             end
         end
     end
-    create()
-    player.CharacterAdded:Connect(create) -- REAPLICA QUANDO MORRER
-end
-
--- 3. BOTÕES
-local function createBtn(text, pos, callback)
-    local btn = Instance.new("TextButton", main)
-    btn.Size = UDim2.new(0.8, 0, 0, 35)
-    btn.Position = pos
-    btn.Text = text
-    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.Gotham
-    Instance.new("UICorner", btn)
-    btn.MouseButton1Click:Connect(function() callback(btn) end)
-    return btn
-end
-
--- Botão Quick Roll
-createBtn("QUICK ROLL: OFF", UDim2.new(0.1, 0, 0.2, 0), function(self)
-    _G.Rolling = not _G.Rolling
-    self.Text = _G.Rolling and "QUICK ROLL: ON" or "QUICK ROLL: OFF"
-    self.BackgroundColor3 = _G.Rolling and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(40, 40, 50)
 end)
 
--- Botão ESP (COM FIX)
-createBtn("ESP NEON: OFF", UDim2.new(0.1, 0, 0.4, 0), function(self)
-    _G.EspActive = not _G.EspActive
-    self.Text = _G.EspActive and "ESP NEON: ON" or "ESP NEON: OFF"
-    self.BackgroundColor3 = _G.EspActive and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(40, 40, 50)
-    
-    -- Atualiza todo mundo na hora
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= lp then applyHighlight(p) end
-    end
-end)
+-- Status Anti-AFK
+local afkLabel = Instance.new("TextLabel", content)
+afkLabel.Size = UDim2.new(1, 0, 0, 30)
+afkLabel.Position = UDim2.new(0, 0, 0.6, 0)
+afkLabel.Text = "STATUS: ANTI-AFK ATIVO"
+afkLabel.TextColor3 = Color3.fromRGB(100, 100, 100)
+afkLabel.Font = Enum.Font.Gotham
+afkLabel.BackgroundTransparency = 1
 
--- 4. LOGICA DE BACKGROUND E ATUALIZAÇÃO
+-- 4. LOOPS
 task.spawn(function()
-    -- Ativa o sistema de detecção de personagens para quem entra
     Players.PlayerAdded:Connect(applyHighlight)
-    
-    while task.wait(0.5) do
-        -- Anti-AFK
+    while task.wait(1) do
+        -- Anti-AFK Real
         VU:CaptureController()
         VU:ClickButton2(Vector2.new())
-        
-        -- Roll Automático
-        if _G.Rolling then
-            local remote = RS:FindFirstChild("Roll", true) or RS:FindFirstChild("RemoteEvent", true)
-            if remote then remote:FireServer() end
-        end
     end
 end)
 
-print("Hub v2 Atualizado! ESP corrigido.")
+print("KING V3 Carregado com Sucesso!")
