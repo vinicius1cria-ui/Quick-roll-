@@ -1,5 +1,5 @@
 --[[
-    KING V3 - FINAL BODY RENDER
+    KING V4 - FINAL BODY RENDER
     - ESP: Highlight (Corpo) + Nome RGB
     - Aimbot: Smooth Agressive
 ]]
