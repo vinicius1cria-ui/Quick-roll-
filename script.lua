@@ -1,178 +1,121 @@
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local character = player.Character or player.CharacterAdded:Wait()
 
-local PlayersService = game:GetService("Players")
-local RunService = game:GetService("RunService")
+-- Variáveis de controle
+local voando = false
+local velocidade = 50
+local bVelo = nil
+local bGyro = nil
 
-local UserInput = UserInputService
-local Tween = TweenService
+-- 1. Criar a interface (Mesmo estilo anterior)
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "MenuVoo"
+screenGui.Parent = player:WaitForChild("PlayerGui")
+screenGui.ResetOnSpawn = false
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "KillAuraGui"
-ScreenGui.Parent = PlayersService.LocalPlayer.PlayerGui
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 250, 0, 200)
+mainFrame.Position = UDim2.new(0.5, -125, 0.5, -100)
+mainFrame.BackgroundColor3 = Color3.fromRGB(10, 20, 40) -- Azul Escuro
+mainFrame.Draggable = true
+mainFrame.Active = true
+mainFrame.Parent = screenGui
 
-local Frame = Instance.new("Frame")
-Frame.Name = "KillAuraFrame"
-Frame.Parent = ScreenGui
-Frame.Size = UDim2.new(0, 200, 0, 50)
-Frame.Position = UDim2.new(0, 0, 0, 0)
-Frame.BackgroundTransparency = 0.5
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 2
+stroke.Color = Color3.new(0,0,0) -- Contorno Preto
+stroke.Parent = mainFrame
 
-local TextLabel = Instance.new("TextLabel")
-TextLabel.Name = "KillAuraLabel"
-TextLabel.Parent = Frame
-TextLabel.Size = UDim2.new(0, 200, 0, 20)
-TextLabel.Position = UDim2.new(0, 0, 0, 0)
-TextLabel.BackgroundTransparency = 1
-TextLabel.Text = "Kill Aura"
-TextLabel.Font = Enum.Font.SourceSansBold
-TextLabel.TextSize = 14
-TextLabel.TextColor3 = Color3.new(1, 1, 1)
+-- Título
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Text = "SISTEMA DE VOO"
+title.BackgroundColor3 = Color3.fromRGB(15, 30, 60)
+title.TextColor3 = Color3.new(1,1,1)
+title.Parent = mainFrame
 
-local Toggle = Instance.new("TextButton")
-Toggle.Name = "KillAuraToggle"
-Toggle.Parent = Frame
-Toggle.Size = UDim2.new(0, 50, 0, 20)
-Toggle.Position = UDim2.new(0, 0, 0, 20)
-Toggle.BackgroundTransparency = 0.5
-Toggle.Text = "On"
-Toggle.Font = Enum.Font.SourceSansBold
-Toggle.TextSize = 14
-Toggle.TextColor3 = Color3.new(1, 1, 1)
+-- Botão Ativar/Desativar
+local flyBtn = Instance.new("TextButton")
+flyBtn.Size = UDim2.new(0, 200, 0, 40)
+flyBtn.Position = UDim2.new(0.5, -100, 0, 50)
+flyBtn.BackgroundColor3 = Color3.fromRGB(20, 40, 80)
+flyBtn.Text = "VOAR: OFF"
+flyBtn.TextColor3 = Color3.new(1,1,1)
+flyBtn.Parent = mainFrame
 
-local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
+-- Botão Aumentar Velocidade
+local speedUp = Instance.new("TextButton")
+speedUp.Size = UDim2.new(0, 95, 0, 40)
+speedUp.Position = UDim2.new(0.5, -100, 0, 100)
+speedUp.Text = "VELO +"
+speedUp.Parent = mainFrame
 
-local PlayersService = game:GetService("Players")
-local LocalPlayer = PlayersService.LocalPlayer
-local Character = LocalPlayer.Character
-local Humanoid = Character:WaitForChild("Humanoid")
+-- Botão Diminuir Velocidade
+local speedDown = Instance.new("TextButton")
+speedDown.Size = UDim2.new(0, 95, 0, 40)
+speedDown.Position = UDim2.new(0.5, 5, 0, 100)
+speedDown.Text = "VELO -"
+speedDown.Parent = mainFrame
 
-local PlayerGui = LocalPlayer.PlayerGui
-local KillAuraGui = PlayerGui:WaitForChild("KillAuraGui")
+-- Mostrar Velocidade Atual
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Size = UDim2.new(1, 0, 0, 30)
+speedLabel.Position = UDim2.new(0, 0, 0, 150)
+speedLabel.BackgroundTransparency = 1
+speedLabel.TextColor3 = Color3.new(1,1,1)
+speedLabel.Text = "Velocidade: " .. velocidade
+speedLabel.Parent = mainFrame
 
-local Function = function()
-    Toggle.Text = "Off"
-    Toggle.TextColor3 = Color3.new(1, 0, 0)
-    local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 1, 1)})
-    Tween:Play()
-end
-
-Toggle.Tapped:Connect(Function)
-
-local Function = function()
-    Toggle.Text = "On"
-    Toggle.TextColor3 = Color3.new(1, 1, 1)
-    local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 0, 0)})
-    Tween:Play()
-end
-
-local Function = function()
-    if Toggle.Text == "On" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 1, 1)})
-        Tween:Play()
-    elseif Toggle.Text == "Off" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 0, 0)})
-        Tween:Play()
+-- LÓGICA DE VOO
+local function toggleFly()
+    voando = not voando
+    character = player.Character
+    local root = character:FindFirstChild("HumanoidRootPart")
+    
+    if voando then
+        flyBtn.Text = "VOAR: ON"
+        flyBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        
+        -- Cria as forças físicas para manter o personagem no ar
+        bVelo = Instance.new("BodyVelocity")
+        bVelo.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        bVelo.Velocity = Vector3.new(0,0,0)
+        bVelo.Parent = root
+        
+        bGyro = Instance.new("BodyGyro")
+        bGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+        bGyro.P = 9000
+        bGyro.Parent = root
+        
+        -- Loop de movimento
+        spawn(function()
+            while voando do
+                -- Faz o personagem ir para onde a câmera aponta
+                bVelo.Velocity = workspace.CurrentCamera.CFrame.LookVector * velocidade
+                bGyro.CFrame = workspace.CurrentCamera.CFrame
+                wait()
+            end
+        end)
+    else
+        flyBtn.Text = "VOAR: OFF"
+        flyBtn.BackgroundColor3 = Color3.fromRGB(20, 40, 80)
+        if bVelo then bVelo:Destroy() end
+        if bGyro then bGyro:Destroy() end
     end
 end
 
-Toggle.Tapped:Connect(Function)
+-- Configurar Botões
+flyBtn.MouseButton1Click:Connect(toggleFly)
 
-local Function = function()
-    if Toggle.Text == "On" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 1, 1)})
-        Tween:Play()
-    elseif Toggle.Text == "Off" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 0, 0)})
-        Tween:Play()
+speedUp.MouseButton1Click:Connect(function()
+    velocidade = velocidade + 10
+    speedLabel.Text = "Velocidade: " .. velocidade
+end)
+
+speedDown.MouseButton1Click:Connect(function()
+    if velocidade > 10 then
+        velocidade = velocidade - 10
+        speedLabel.Text = "Velocidade: " .. velocidade
     end
-end
-
-local Function = function()
-    if Toggle.Text == "On" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 1, 1)})
-        Tween:Play()
-    elseif Toggle.Text == "Off" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 0, 0)})
-        Tween:Play()
-    end
-end
-
-local Function = function()
-    if Toggle.Text == "On" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 1, 1)})
-        Tween:Play()
-    elseif Toggle.Text == "Off" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 0, 0)})
-        Tween:Play()
-    end
-end
-
-local Function = function()
-    if Toggle.Text == "On" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 1, 1)})
-        Tween:Play()
-    elseif Toggle.Text == "Off" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 0, 0)})
-        Tween:Play()
-    end
-end
-
-local Function = function()
-    if Toggle.Text == "On" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 1, 1)})
-        Tween:Play()
-    elseif Toggle.Text == "Off" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 0, 0)})
-        Tween:Play()
-    end
-end
-
-local Function = function()
-    if Toggle.Text == "On" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 1, 1)})
-        Tween:Play()
-    elseif Toggle.Text == "Off" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 0, 0)})
-        Tween:Play()
-    end
-end
-
-local Function = function()
-    if Toggle.Text == "On" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 1, 1)})
-        Tween:Play()
-    elseif Toggle.Text == "Off" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 0, 0)})
-        Tween:Play()
-    end
-end
-
-local Function = function()
-    if Toggle.Text == "On" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 1, 1)})
-        Tween:Play()
-    elseif Toggle.Text == "Off" then
-        local TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
-        local Tween = TweenService:Create(Toggle, TweenInfo, {TextColor3 = Color3.new(1, 0, 0)})
-        Tween:Play()
-                                                        end
+end)
