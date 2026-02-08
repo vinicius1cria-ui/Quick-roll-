@@ -1,52 +1,95 @@
+--[[
+    KING HUB V2 - EXTREME EDITION
+    Design: Glassmorphism / Dark Blue
+]]
+
 local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
 local character = player.Character or player.CharacterAdded:Wait()
+local runService = game:GetService("RunService")
 
--- Variáveis de controle de voo
-local voando = false
-local velocidade = 50
-local bVelo = nil
-local bGyro = nil
-local minimizado = false
+-- Variáveis de Estado
+local states = {
+    fly = false,
+    noclip = false,
+    speed = 16,
+    jump = 50,
+    flySpeed = 50
+}
 
--- 1. Criar a ScreenGui
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "KingFlysystem"
-screenGui.Parent = player:WaitForChild("PlayerGui")
-screenGui.ResetOnSpawn = false
+-- Criar Interface Principal
+local sg = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+sg.Name = "KingHubV2"
+sg.ResetOnSpawn = false
 
--- Função para contorno
-local function addStroke(obj)
-    local s = Instance.new("UIStroke")
-    s.Thickness = 2
-    s.Color = Color3.new(0,0,0)
-    s.Parent = obj
+local main = Instance.new("Frame", sg)
+main.Size = UDim2.new(0, 350, 0, 300)
+main.Position = UDim2.new(0.5, -175, 0.5, -150)
+main.BackgroundColor3 = Color3.fromRGB(15, 20, 35)
+main.BorderSizePixel = 0
+main.Active = true
+main.Draggable = true
+
+-- Arredondar Cantos e Borda
+local corner = Instance.new("UICorner", main)
+corner.CornerRadius = ToolUnit.new(0, 12)
+local stroke = Instance.new("UIStroke", main)
+stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(40, 100, 255)
+stroke.Transparency = 0.5
+
+-- Título
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundTransparency = 1
+title.Text = "♔ KING HUB V2"
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+
+-- Container de Botões (Scrolling)
+local container = Instance.new("ScrollingFrame", main)
+container.Size = UDim2.new(1, -20, 1, -60)
+container.Position = UDim2.new(0, 10, 0, 50)
+container.BackgroundTransparency = 1
+container.CanvasSize = UDim2.new(0, 0, 1.5, 0)
+container.ScrollBarThickness = 2
+
+local layout = Instance.new("UIListLayout", container)
+layout.Padding = UDim.new(0, 8)
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+-- Função para criar Botões Estilizados
+local function createButton(name, callback)
+    local btn = Instance.new("TextButton", container)
+    btn.Size = UDim2.new(0, 300, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(25, 35, 60)
+    btn.Text = name
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Font = Enum.Font.GothamSemibold
+    btn.TextSize = 14
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    
+    btn.MouseButton1Click:Connect(function()
+        callback(btn)
+    end)
+    return btn
 end
 
--- 2. Janela Principal
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 250, 0, 200)
-mainFrame.Position = UDim2.new(0.5, -125, 0.5, -100)
-mainFrame.BackgroundColor3 = Color3.fromRGB(10, 20, 40)
-mainFrame.Draggable = true
-mainFrame.Active = true
-mainFrame.Parent = screenGui
-addStroke(mainFrame)
-
--- 3. Barra de Título
-local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 35)
-titleBar.BackgroundColor3 = Color3.fromRGB(15, 30, 60)
-titleBar.Parent = mainFrame
-addStroke(titleBar)
-
-local titleText = Instance.new("TextLabel")
-titleText.Size = UDim2.new(1, -70, 1, 0)
-titleText.Position = UDim2.new(0, 10, 0, 0)
-titleText.BackgroundTransparency = 1
-titleText.Text = "KING FLY V1"
-titleText.TextColor3 = Color3.new(1,1,1)
-titleText.Font = Enum.Font.GothamBold
-titleText.TextXAlignment = Enum.TextXAlignment.Left
-titleText.TextSize = 14
-titleText.Parent = title
+-- 1. BOTÃO FLY
+local bVelo, bGyro
+createButton("FLY: OFF", function(self)
+    states.fly = not states.fly
+    if states.fly then
+        self.Text = "FLY: ON"
+        self.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
+        local root = player.Character:FindFirstChild("HumanoidRootPart")
+        bVelo = Instance.new("BodyVelocity", root)
+        bVelo.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        bGyro = Instance.new("BodyGyro", root)
+        bGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+        
+        task.spawn(function()
+            while states.fly do
+                bVelo.Velocity = workspace.CurrentCamera.CFrame.LookVector
+                        
