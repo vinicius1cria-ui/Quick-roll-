@@ -10,7 +10,7 @@ local minimizado = false
 
 -- 1. Criar a ScreenGui
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "KingFlySystem"
+screenGui.Name = "KingFlysystem"
 screenGui.Parent = player:WaitForChild("PlayerGui")
 screenGui.ResetOnSpawn = false
 
