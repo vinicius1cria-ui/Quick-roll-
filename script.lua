@@ -1,73 +1,84 @@
 --[[
-    KING V3 - SOLO HUNTER (KILL AURA & REMOTES)
+    KING V3 - ESP PRO (JOGADORES + MONSTROS)
+    Com Botão Minimizar e Toggles ON/OFF
 ]]
 
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 
--- CONFIGS
-_G.KillAura = false
-_G.AuraRange = 60
-_G.SpeedEnabled = false
-_G.SpeedValue = 25
-_G.JumpEnabled = false
-_G.JumpValue = 60
-_G.DoubleJumpEnabled = false
-_G.EspActive = false
+-- ESTADO INICIAL (TUDO DESLIGADO)
+_G.EspPlayers = false
+_G.EspMobs = false
 
-local hasDoubleJumped = false
-local minimized = false
+-- 1. LIMPEZA DE SCRIPTS ANTIGOS
+if lp.PlayerGui:FindFirstChild("KingV3_ESP") then lp.PlayerGui.KingV3_ESP:Destroy() end
 
--- 1. LIMPEZA
-if lp.PlayerGui:FindFirstChild("KingV3_SoloHunter") then lp.PlayerGui.KingV3_SoloHunter:Destroy() end
-
--- 2. TELA PRINCIPAL
+-- 2. TELA (SCREEN GUI)
 local sg = Instance.new("ScreenGui", lp.PlayerGui)
-sg.Name = "KingV3_SoloHunter"
+sg.Name = "KingV3_ESP"
 sg.ResetOnSpawn = false
 
--- 3. FRAME
+-- 3. MENU PRINCIPAL
 local main = Instance.new("Frame", sg)
-main.Size = UDim2.new(0, 240, 0, 400)
+main.Size = UDim2.new(0, 240, 0, 180)
 main.Position = UDim2.new(0.1, 0, 0.2, 0)
 main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 main.Active = true
-main.Draggable = true
+main.Draggable = true -- Podes arrastar o menu pelo ecrã
 main.ZIndex = 10
 Instance.new("UICorner", main)
 
 local stroke = Instance.new("UIStroke", main)
 stroke.Thickness = 2
-stroke.Color = Color3.fromRGB(130, 0, 255)
+stroke.Color = Color3.fromRGB(130, 0, 255) -- Borda Roxa
 
--- BOTÃO MINIMIZAR
+-- 4. BOTÃO MINIMIZAR (— / +)
 local minBtn = Instance.new("TextButton", main)
 minBtn.Size = UDim2.new(0, 35, 0, 30)
 minBtn.Position = UDim2.new(1, -40, 0, 5)
 minBtn.Text = "—"
 minBtn.BackgroundColor3 = Color3.fromRGB(130, 0, 255)
 minBtn.TextColor3 = Color3.new(1, 1, 1)
+minBtn.Font = Enum.Font.GothamBold
+minBtn.TextSize = 20
 minBtn.ZIndex = 100
 Instance.new("UICorner", minBtn)
 
+-- CONTAINER PARA OS BOTÕES (CONTENT)
 local content = Instance.new("Frame", main)
 content.Size = UDim2.new(1, 0, 1, -45)
 content.Position = UDim2.new(0, 0, 0, 45)
 content.BackgroundTransparency = 1
 content.ZIndex = 11
 
+-- LÓGICA DO BOTÃO MINIMIZAR
 minBtn.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    content.Visible = not minimized
-    main:TweenSize(minimized and UDim2.new(0, 240, 0, 45) or UDim2.new(0, 240, 0, 400), "Out", "Quad", 0.3, true)
-    minBtn.Text = minimized and "+" or "—"
+    local isExpanded = (main.Size.Y.Offset > 50)
+    if isExpanded then
+        main:TweenSize(UDim2.new(0, 240, 0, 45), "Out", "Quad", 0.3, true)
+        minBtn.Text = "+"
+        content.Visible = false
+    else
+        main:TweenSize(UDim2.new(0, 240, 0, 180), "Out", "Quad", 0.3, true)
+        minBtn.Text = "—"
+        content.Visible = true
+    end
 end)
 
--- 4. FUNÇÃO TOGGLE
-local function createToggle(txt, y, var)
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1, -50, 0, 45)
+title.Position = UDim2.new(0, 15, 0, 0)
+title.Text = "KING V3 - ESP"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 14
+title.BackgroundTransparency = 1
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.ZIndex = 12
+
+-- 5. FUNÇÃO PARA CRIAR BOTÕES DE ATIVAR/DESATIVAR
+local function createToggle(txt, y, varName)
     local btn = Instance.new("TextButton", content)
     btn.Size = UDim2.new(0.85, 0, 0, 35)
     btn.Position = UDim2.new(0.075, 0, 0, y)
@@ -79,83 +90,58 @@ local function createToggle(txt, y, var)
     Instance.new("UICorner", btn)
 
     btn.MouseButton1Click:Connect(function()
-        _G[var] = not _G[var]
-        btn.Text = txt .. ": " .. (_G[var] and "ON" or "OFF")
-        btn.BackgroundColor3 = _G[var] and Color3.fromRGB(130, 0, 255) or Color3.fromRGB(30, 30, 40)
+        _G[varName] = not _G[varName]
+        if _G[varName] then
+            btn.Text = txt .. ": ON"
+            btn.BackgroundColor3 = Color3.fromRGB(130, 0, 255) -- Fica roxo quando liga
+        else
+            btn.Text = txt .. ": OFF"
+            btn.BackgroundColor3 = Color3.fromRGB(30, 30, 40) -- Fica cinza quando desliga
+        end
     end)
     return y + 45
 end
 
--- 5. LÓGICA KILL AURA (SOLO HUNTER)
--- Tentamos atacar mobs e jogadores próximos
-task.spawn(function()
-    while task.wait(0.2) do
-        if _G.KillAura and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-            pcall(function()
-                for _, v in pairs(workspace:GetChildren()) do
-                    -- Verifica se é um NPC/Bicho ou Player com vida
-                    if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v ~= lp.Character then
-                        local mag = (lp.Character.HumanoidRootPart.Position - v.HumanoidRootPart.Position).Magnitude
-                        if mag <= _G.AuraRange and v.Humanoid.Health > 0 then
-                            -- Ataca o bicho enviando um sinal de toque/combate
-                            local tool = lp.Character:FindFirstChildOfClass("Tool")
-                            if tool then
-                                -- Forçamos a animação e o hit
-                                tool:Activate()
-                                firetouchinterest(v.HumanoidRootPart, tool.Handle, 0)
-                                firetouchinterest(v.HumanoidRootPart, tool.Handle, 1)
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-    end
-end)
+-- CRIA OS BOTÕES NO MENU
+createToggle("ESP JOGADORES", 10, "EspPlayers")
+createToggle("ESP MONSTROS", 60, "EspMobs")
 
--- 6. BOTÕES
-local posY = 10
-posY = createToggle("KILL AURA (MOBS)", posY, "KillAura")
-posY = createToggle("ESP ALL", posY, "EspActive")
-posY = createToggle("SPEED", posY, "SpeedEnabled")
-posY = createToggle("JUMP POWER", posY, "JumpEnabled")
-posY = createToggle("DOUBLE JUMP", posY, "DoubleJumpEnabled")
-
--- MOVIMENTO
-RunService.Stepped:Connect(function()
-    if lp.Character and lp.Character:FindFirstChild("Humanoid") then
-        if _G.SpeedEnabled then lp.Character.Humanoid.WalkSpeed = _G.SpeedValue end
-        if _G.JumpEnabled then lp.Character.Humanoid.UseJumpPower = true lp.Character.Humanoid.JumpPower = _G.JumpValue end
-    end
-end)
-
--- DOUBLE JUMP
-UserInputService.JumpRequest:Connect(function()
-    if _G.DoubleJumpEnabled and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-        local h = lp.Character.Humanoid
-        if h:GetState() == Enum.HumanoidStateType.Freefall and not hasDoubleJumped then
-            hasDoubleJumped = true
-            local bv = Instance.new("BodyVelocity", lp.Character.HumanoidRootPart)
-            bv.Velocity = Vector3.new(0, _G.JumpValue * 1.3, 0)
-            bv.MaxForce = Vector3.new(0, 99999, 0)
-            task.wait(0.1)
-            bv:Destroy()
-        end
-    end
-end)
-
--- ESP E RESET
+-- 6. LÓGICA DO ESP (RODANDO EM BACKGROUND)
 RunService.Heartbeat:Connect(function()
-    if lp.Character and lp.Character:FindFirstChild("Humanoid") and lp.Character.Humanoid.FloorMaterial ~= Enum.Material.Air then
-        hasDoubleJumped = false
-    end
-    if _G.EspActive then
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= lp and p.Character then
-                local hl = p.Character:FindFirstChild("KingHL") or Instance.new("Highlight", p.Character)
-                hl.Name = "KingHL"
-                hl.FillColor = Color3.fromRGB(130, 0, 255)
+    -- ESP PARA JOGADORES
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= lp and p.Character then
+            local hl = p.Character:FindFirstChild("PlayerHL")
+            if _G.EspPlayers then
+                if not hl then
+                    hl = Instance.new("Highlight", p.Character)
+                    hl.Name = "PlayerHL"
+                    hl.FillColor = Color3.fromRGB(130, 0, 255)
+                    hl.OutlineColor = Color3.new(1, 1, 1)
+                end
+            elseif hl then 
+                hl:Destroy() 
             end
+        end
+    end
+
+    -- ESP PARA MONSTROS (MOBS)
+    if _G.EspMobs then
+        for _, v in pairs(workspace:GetChildren()) do
+            -- Procura modelos com Humanoid que não são players
+            if v:IsA("Model") and v:FindFirstChild("Humanoid") and not Players:GetPlayerFromCharacter(v) then
+                local hl = v:FindFirstChild("MobHL")
+                if not hl then
+                    hl = Instance.new("Highlight", v)
+                    hl.Name = "MobHL"
+                    hl.FillColor = Color3.fromRGB(255, 0, 0) -- Vermelho para monstros
+                end
+            end
+        end
+    else
+        -- Remove o ESP dos monstros se desligar
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v.Name == "MobHL" then v:Destroy() end
         end
     end
 end)
