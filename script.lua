@@ -18,7 +18,7 @@ if lp.PlayerGui:FindFirstChild("KingV3_Final") then lp.PlayerGui.KingV3_Final:De
 
 -- 2. TELA
 local sg = Instance.new("ScreenGui", lp.PlayerGui)
-sg.Name = "KingV3_Final"
+sg.Name = "SHAROPIN GOD"
 sg.ResetOnSpawn = false
 
 -- 3. FRAME PRINCIPAL
