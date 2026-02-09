@@ -1,131 +1,61 @@
 --[[
-    KING HUB V2 - ANTI-FAIL VERSION
+    KING V3 - TELEPORT & TEAM ESP
+    - ESP Team (Roxo) com Toggle
+    - Teleport Players (Dropdown/Botões)
+    - Botão Minimizar [— / +]
 ]]
 
 local Players = game:GetService("Players")
+local lp = Players.LocalPlayer
 local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
-local pgui = player:WaitForChild("PlayerGui")
 
--- Proteção para o script não quebrar se o personagem sumir
-local character = player.Character or player.CharacterAdded:Wait()
+-- CONFIGS
+_G.TeamEspActive = false
+local minimized = false
 
--- Remover menu antigo se existir para não acumular
-if pgui:FindFirstChild("KingHubV2") then
-    pgui.KingHubV2:Destroy()
-end
+-- 1. LIMPEZA
+if lp.PlayerGui:FindFirstChild("KingV3_Final") then lp.PlayerGui.KingV3_Final:Destroy() end
 
--- Variáveis
-local states = { fly = false, noclip = false, speed = 16, flySpeed = 50 }
-local bVelo, bGyro
-
--- Criar Interface
-local sg = Instance.new("ScreenGui")
-sg.Name = "KingHubV2"
-sg.Parent = pgui
+-- 2. TELA
+local sg = Instance.new("ScreenGui", lp.PlayerGui)
+sg.Name = "KingV3_Final"
 sg.ResetOnSpawn = false
 
-local main = Instance.new("Frame")
-main.Name = "Main"
-main.Size = UDim2.new(0, 280, 0, 320)
-main.Position = UDim2.new(0.5, -140, 0.5, -160)
-main.BackgroundColor3 = Color3.fromRGB(10, 15, 30)
-main.BorderSizePixel = 0
+-- 3. FRAME PRINCIPAL
+local main = Instance.new("Frame", sg)
+main.Size = UDim2.new(0, 250, 0, 350)
+main.Position = UDim2.new(0.1, 0, 0.2, 0)
+main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 main.Active = true
 main.Draggable = true
-main.Parent = sg
+main.ZIndex = 10
+Instance.new("UICorner", main)
 
--- Bordas Arredondadas (Versão Compatível)
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
-corner.Parent = main
-
-local stroke = Instance.new("UIStroke")
+local stroke = Instance.new("UIStroke", main)
 stroke.Thickness = 2
-stroke.Color = Color3.fromRGB(0, 120, 255)
-stroke.Parent = main
+stroke.Color = Color3.fromRGB(130, 0, 255)
 
--- Título
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.BackgroundTransparency = 1
-title.Text = "KING HUB V2"
-title.TextColor3 = Color3.new(1,1,1)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 16
-title.Parent = main
+-- BOTÃO MINIMIZAR
+local minBtn = Instance.new("TextButton", main)
+minBtn.Size = UDim2.new(0, 35, 0, 30)
+minBtn.Position = UDim2.new(1, -40, 0, 5)
+minBtn.Text = "—"
+minBtn.BackgroundColor3 = Color3.fromRGB(130, 0, 255)
+minBtn.TextColor3 = Color3.new(1, 1, 1)
+minBtn.Font = Enum.Font.GothamBold
+minBtn.ZIndex = 100
+Instance.new("UICorner", minBtn)
 
--- Função para botões
-local function createBtn(text, pos, callback)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 240, 0, 40)
-    btn.Position = pos
-    btn.BackgroundColor3 = Color3.fromRGB(20, 30, 50)
-    btn.Text = text
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.Font = Enum.Font.Gotham
-    btn.TextSize = 14
-    btn.Parent = main
-    
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-    
-    btn.MouseButton1Click:Connect(function()
-        callback(btn)
-    end)
-end
+local content = Instance.new("ScrollingFrame", main)
+content.Size = UDim2.new(1, 0, 1, -45)
+content.Position = UDim2.new(0, 0, 0, 45)
+content.BackgroundTransparency = 1
+content.ZIndex = 11
+content.ScrollBarThickness = 4
+content.CanvasSize = UDim2.new(0, 0, 2, 0)
 
--- Botões
-createBtn("VOAR: OFF", UDim2.new(0, 20, 0, 50), function(self)
-    states.fly = not states.fly
-    local root = player.Character:FindFirstChild("HumanoidRootPart")
-    if states.fly then
-        self.Text = "VOAR: ON"
-        self.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-        bVelo = Instance.new("BodyVelocity", root)
-        bVelo.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        bGyro = Instance.new("BodyGyro", root)
-        bGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-        
-        task.spawn(function()
-            while states.fly do
-                bVelo.Velocity = workspace.CurrentCamera.CFrame.LookVector * states.flySpeed
-                bGyro.CFrame = workspace.CurrentCamera.CFrame
-                task.wait()
-            end
-        end)
-    else
-        self.Text = "VOAR: OFF"
-        self.BackgroundColor3 = Color3.fromRGB(20, 30, 50)
-        if bVelo then bVelo:Destroy() end
-        if bGyro then bGyro:Destroy() end
-    end
-end)
-
-createBtn("ATRAVESSAR PAREDE", UDim2.new(0, 20, 0, 100), function(self)
-    states.noclip = not states.noclip
-    self.BackgroundColor3 = states.noclip and Color3.fromRGB(150, 100, 0) or Color3.fromRGB(20, 30, 50)
-end)
-
-createBtn("VELOCIDADE +", UDim2.new(0, 20, 0, 150), function()
-    states.speed = states.speed + 20
-    player.Character.Humanoid.WalkSpeed = states.speed
-end)
-
-createBtn("FECHAR MENU", UDim2.new(0, 20, 0, 250), function()
-    states.fly = false
-    states.noclip = false
-    sg:Destroy()
-end)
-
--- Loop do Noclip (Atravessar paredes)
-RunService.Stepped:Connect(function()
-    if states.noclip and player.Character then
-        for _, part in pairs(player.Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
-        end
-    end
-end)
-
-print("King Hub V2 Executado!")
+minBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    content.Visible = not minimized
+    main:TweenSize(minimized and UDim2.new(0, 250, 0, 45) or UDim2.new(0,
+                
