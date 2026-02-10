@@ -1,5 +1,5 @@
 --[[
-    KING V3 - TELEPORT & TEAM ESP (FORCE LOAD)
+    KING V3 - SHAROPIN GOD EDITION (RGB TITLE)
 ]]
 
 local Players = game:GetService("Players")
@@ -9,19 +9,18 @@ local RunService = game:GetService("RunService")
 -- CONFIGS
 _G.TeamEspActive = false
 
--- LIMPEZA TOTAL ANTES DE COMEÇAR
+-- 1. LIMPEZA TOTAL
 if lp.PlayerGui:FindFirstChild("KingV3_Final") then lp.PlayerGui.KingV3_Final:Destroy() end
 
--- CRIANDO A TELA
+-- 2. TELA
 local sg = Instance.new("ScreenGui", lp.PlayerGui)
 sg.Name = "KingV3_Final"
 sg.ResetOnSpawn = false
-sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- FRAME PRINCIPAL
+-- 3. FRAME PRINCIPAL
 local main = Instance.new("Frame", sg)
 main.Size = UDim2.new(0, 250, 0, 350)
-main.Position = UDim2.new(0.5, -125, 0.4, -175) -- Centralizado na tela
+main.Position = UDim2.new(0.5, -125, 0.4, -175)
 main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 main.Active = true
 main.Draggable = true
@@ -31,6 +30,25 @@ Instance.new("UICorner", main)
 local stroke = Instance.new("UIStroke", main)
 stroke.Thickness = 2
 stroke.Color = Color3.fromRGB(130, 0, 255)
+
+-- TÍTULO COM NOME PERSONALIZADO
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1, -50, 0, 45)
+title.Position = UDim2.new(0, 15, 0, 0)
+title.Text = "sharopin god" -- Nome que pediste
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
+title.BackgroundTransparency = 1
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.ZIndex = 12
+
+-- LÓGICA RGB PARA O TÍTULO
+task.spawn(function()
+    while task.wait() do
+        local hue = tick() % 5 / 5
+        title.TextColor3 = Color3.fromHSV(hue, 1, 1)
+    end
+end)
 
 -- BOTÃO MINIMIZAR
 local minBtn = Instance.new("TextButton", main)
@@ -124,5 +142,3 @@ task.spawn(function()
     while task.wait(5) do createTP() end
 end)
 createTP()
-
-print("KING V3 CARREGADO COM SUCESSO!")
