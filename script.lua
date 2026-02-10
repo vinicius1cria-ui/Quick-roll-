@@ -1,227 +1,171 @@
---[[
-    KING V3 - SHAROPIN GOD EDITION (FIXED & UPDATED)
-    - Funções: Fly, Speed Control, Team ESP, Teleport
-    - Título: sharopin god (RGB)
-]]
-
+-- SHAROPE KING - OFFICIAL VERSION
 local Players = game:GetService("Players")
-local lp = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
 
--- CONFIGS GLOBAIS
-_G.TeamEspActive = false
-_G.FlyEnabled = false
-_G.WalkSpeedValue = 16
-_G.FlySpeed = 50
+-- Variáveis de Estado
+local states = {
+    fly = false,
+    flySpeed = 50,
+    walkSpeed = 16,
+    esp = false,
+    minimizado = false
+}
 
--- 1. LIMPEZA TOTAL
-if lp.PlayerGui:FindFirstChild("KingV3_Final") then lp.PlayerGui.KingV3_Final:Destroy() end
+local bVelo, bGyro
 
--- 2. TELA
-local sg = Instance.new("ScreenGui", lp.PlayerGui)
-sg.Name = "KingV3_Final"
+-- Criar Interface
+local sg = Instance.new("ScreenGui")
+sg.Name = "SharopeKing"
+sg.Parent = game:GetService("CoreGui") or player:WaitForChild("PlayerGui")
 sg.ResetOnSpawn = false
 
--- 3. FRAME PRINCIPAL
-local main = Instance.new("Frame", sg)
-main.Size = UDim2.new(0, 260, 0, 380)
-main.Position = UDim2.new(0.5, -130, 0.4, -190)
-main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+-- Janela Principal
+local main = Instance.new("Frame")
+main.Name = "Main"
+main.Size = UDim2.new(0, 250, 0, 320)
+main.Position = UDim2.new(0.5, -125, 0.5, -160)
+main.BackgroundColor3 = Color3.fromRGB(15, 15, 15) -- Preto
+main.BorderSizePixel = 0
 main.Active = true
 main.Draggable = true
-main.ZIndex = 10
-Instance.new("UICorner", main)
+main.Parent = sg
 
 local stroke = Instance.new("UIStroke", main)
 stroke.Thickness = 2
-stroke.Color = Color3.fromRGB(130, 0, 255)
+stroke.Color = Color3.fromRGB(200, 0, 0) -- Vermelho
 
--- TÍTULO RGB: sharopin god
-local title = Instance.new("TextLabel", main)
-title.Size = UDim2.new(1, -50, 0, 45)
-title.Position = UDim2.new(0, 15, 0, 0)
-title.Text = "sharopin god"
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
+
+-- Título
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundColor3 = Color3.fromRGB(30, 0, 0)
+title.Text = "SHAROPE KING"
+title.TextColor3 = Color3.fromRGB(255, 0, 0)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
-title.BackgroundTransparency = 1
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.ZIndex = 12
+title.Parent = main
+Instance.new("UICorner", title).CornerRadius = UDim.new(0, 10)
 
-task.spawn(function()
-    while task.wait() do
-        local hue = tick() % 5 / 5
-        title.TextColor3 = Color3.fromHSV(hue, 0.8, 1)
-    end
-end)
-
--- BOTÃO MINIMIZAR
-local minBtn = Instance.new("TextButton", main)
-minBtn.Size = UDim2.new(0, 35, 0, 30)
-minBtn.Position = UDim2.new(1, -40, 0, 7)
-minBtn.Text = "—"
-minBtn.BackgroundColor3 = Color3.fromRGB(130, 0, 255)
-minBtn.TextColor3 = Color3.new(1, 1, 1)
-minBtn.Font = Enum.Font.GothamBold
-minBtn.ZIndex = 100
+-- Botão Minimizar
+local minBtn = Instance.new("TextButton", title)
+minBtn.Size = UDim2.new(0, 30, 0, 30)
+minBtn.Position = UDim2.new(1, -35, 0, 5)
+minBtn.Text = "-"
+minBtn.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
+minBtn.TextColor3 = Color3.new(1,1,1)
 Instance.new("UICorner", minBtn)
 
--- CONTEÚDO (ROLÁVEL)
-local content = Instance.new("ScrollingFrame", main)
-content.Size = UDim2.new(1, -10, 1, -55)
-content.Position = UDim2.new(0, 5, 0, 50)
+-- Container dos Botões
+local content = Instance.new("Frame", main)
+content.Size = UDim2.new(1, 0, 1, -40)
+content.Position = UDim2.new(0, 0, 0, 40)
 content.BackgroundTransparency = 1
-content.ZIndex = 11
-content.ScrollBarThickness = 2
-content.CanvasSize = UDim2.new(0, 0, 0, 600) -- Espaço extra para não ficar invisível
 
-local listLayout = Instance.new("UIListLayout", content)
-listLayout.Padding = UDim.new(0, 8)
-listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+local layout = Instance.new("UIListLayout", content)
+layout.Padding = UDim.new(0, 5)
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
--- LÓGICA MINIMIZAR
-local minimized = false
-minBtn.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    content.Visible = not minimized
-    main:TweenSize(minimized and UDim2.new(0, 260, 0, 45) or UDim2.new(0, 260, 0, 380), "Out", "Quad", 0.3, true)
-    minBtn.Text = minimized and "+" or "—"
-end)
-
--- FUNÇÃO PARA CRIAR BOTÕES
-local function createToggle(txt, varName)
-    local btn = Instance.new("TextButton", content)
-    btn.Size = UDim2.new(0.9, 0, 0, 35)
-    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    btn.Text = txt .. ": OFF"
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.GothamBold
-    Instance.new("UICorner", btn)
-
-    btn.MouseButton1Click:Connect(function()
-        _G[varName] = not _G[varName]
-        btn.Text = txt .. ": " .. (_G[varName] and "ON" or "OFF")
-        btn.BackgroundColor3 = _G[varName] and Color3.fromRGB(130, 0, 255) or Color3.fromRGB(30, 30, 40)
-    end)
-    return btn
+-- Função para Criar Botão
+local function createBtn(txt, callback)
+    local b = Instance.new("TextButton", content)
+    b.Size = UDim2.new(0, 220, 0, 35)
+    b.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    b.Text = txt
+    b.TextColor3 = Color3.new(1,1,1)
+    b.Font = Enum.Font.GothamSemibold
+    Instance.new("UICorner", b)
+    local s = Instance.new("UIStroke", b)
+    s.Color = Color3.fromRGB(100, 0, 0)
+    b.MouseButton1Click:Connect(function() callback(b) end)
+    return b
 end
 
--- 4. ADICIONANDO AS FUNÇÕES
-createToggle("VOAR (FLY)", "FlyEnabled")
-createToggle("ESP TIME ROXO", "TeamEspActive")
-
--- AJUSTE DE VELOCIDADE
-local speedFrame = Instance.new("Frame", content)
-speedFrame.Size = UDim2.new(0.9, 0, 0, 60)
-speedFrame.BackgroundTransparency = 1
-
-local speedLabel = Instance.new("TextLabel", speedFrame)
-speedLabel.Size = UDim2.new(1, 0, 0, 20)
-speedLabel.Text = "VELOCIDADE: " .. _G.WalkSpeedValue
-speedLabel.TextColor3 = Color3.new(1,1,1)
-speedLabel.Font = Enum.Font.GothamBold
-speedLabel.BackgroundTransparency = 1
-
-local btnLess = Instance.new("TextButton", speedFrame)
-btnLess.Size = UDim2.new(0.4, 0, 0, 30)
-btnLess.Position = UDim2.new(0, 0, 0, 25)
-btnLess.Text = "-"
-btnLess.BackgroundColor3 = Color3.fromRGB(130, 0, 255)
-btnLess.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", btnLess)
-
-local btnMore = Instance.new("TextButton", speedFrame)
-btnMore.Size = UDim2.new(0.4, 0, 0, 30)
-btnMore.Position = UDim2.new(0.6, 0, 0, 25)
-btnMore.Text = "+"
-btnMore.BackgroundColor3 = Color3.fromRGB(130, 0, 255)
-btnMore.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", btnMore)
-
-btnLess.MouseButton1Click:Connect(function()
-    _G.WalkSpeedValue = math.max(16, _G.WalkSpeedValue - 5)
-    speedLabel.Text = "VELOCIDADE: " .. _G.WalkSpeedValue
-end)
-
-btnMore.MouseButton1Click:Connect(function()
-    _G.WalkSpeedValue = _G.WalkSpeedValue + 10
-    speedLabel.Text = "VELOCIDADE: " .. _G.WalkSpeedValue
-end)
-
--- TELEPORTS
-local tpLabel = Instance.new("TextLabel", content)
-tpLabel.Size = UDim2.new(0.9, 0, 0, 20)
-tpLabel.Text = "—— TELEPORTS ——"
-tpLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-tpLabel.BackgroundTransparency = 1
-tpLabel.Font = Enum.Font.GothamBold
-
--- 5. LÓGICA DE MOVIMENTO (SPEED & FLY)
-RunService.Stepped:Connect(function()
-    if lp.Character and lp.Character:FindFirstChild("Humanoid") then
-        lp.Character.Humanoid.WalkSpeed = _G.WalkSpeedValue
-    end
-end)
-
--- LÓGICA FLY (VOAR)
-local bv, bg
-task.spawn(function()
-    while task.wait() do
-        if _G.FlyEnabled and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-            if not bv then
-                bv = Instance.new("BodyVelocity", lp.Character.HumanoidRootPart)
-                bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-                bg = Instance.new("BodyGyro", lp.Character.HumanoidRootPart)
-                bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+-- 1. FUNÇÃO VOO
+local flyB = createBtn("VOAR: OFF", function(self)
+    states.fly = not states.fly
+    local root = player.Character:FindFirstChild("HumanoidRootPart")
+    if states.fly then
+        self.Text = "VOAR: ON"
+        self.TextColor3 = Color3.new(0,1,0)
+        bVelo = Instance.new("BodyVelocity", root)
+        bVelo.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        bGyro = Instance.new("BodyGyro", root)
+        bGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+        task.spawn(function()
+            while states.fly do
+                bVelo.Velocity = workspace.CurrentCamera.CFrame.LookVector * states.flySpeed
+                bGyro.CFrame = workspace.CurrentCamera.CFrame
+                task.wait()
             end
-            bg.CFrame = workspace.CurrentCamera.CFrame
-            local direction = Vector3.new(0,0,0)
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction = direction + workspace.CurrentCamera.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction = direction - workspace.CurrentCamera.CFrame.LookVector end
-            bv.Velocity = direction * _G.FlySpeed
-        else
-            if bv then bv:Destroy() bv = nil end
-            if bg then bg:Destroy() bg = nil end
-        end
+            if bVelo then bVelo:Destroy() end
+            if bGyro then bGyro:Destroy() end
+        end)
+    else
+        self.Text = "VOAR: OFF"
+        self.TextColor3 = Color3.new(1,1,1)
     end
 end)
 
--- LÓGICA ESP TEAM
+createBtn("VELO VOO +", function() states.flySpeed = states.flySpeed + 20 end)
+createBtn("VELO VOO -", function() states.flySpeed = math.max(10, states.flySpeed - 20) end)
+
+-- 2. FUNÇÃO CORRER
+createBtn("CORRER +", function() 
+    states.walkSpeed = states.walkSpeed + 20
+    player.Character.Humanoid.WalkSpeed = states.walkSpeed
+end)
+
+createBtn("CORRER -", function() 
+    states.walkSpeed = math.max(16, states.walkSpeed - 20)
+    player.Character.Humanoid.WalkSpeed = states.walkSpeed
+end)
+
+-- 3. FUNÇÃO ESP ROSA
+createBtn("ESP ROSA: OFF", function(self)
+    states.esp = not states.esp
+    self.Text = states.esp and "ESP ROSA: ON" or "ESP ROSA: OFF"
+    self.TextColor3 = states.esp and Color3.fromRGB(255, 105, 180) or Color3.new(1,1,1)
+end)
+
+-- Loop do ESP
 RunService.RenderStepped:Connect(function()
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= lp and p.Character then
-            local hl = p.Character:FindFirstChild("TeamHL")
-            if _G.TeamEspActive and p.Team == lp.Team then
-                if not hl then
-                    hl = Instance.new("Highlight", p.Character)
-                    hl.Name = "TeamHL"
-                    hl.FillColor = Color3.fromRGB(130, 0, 255)
+        if p ~= player and p.Character and p.Character:FindFirstChild("Head") then
+            local head = p.Character.Head
+            local billboard = head:FindFirstChild("KingESP")
+            if states.esp then
+                if not billboard then
+                    billboard = Instance.new("BillboardGui", head)
+                    billboard.Name = "KingESP"
+                    billboard.AlwaysOnTop = true
+                    billboard.Size = UDim2.new(0, 100, 0, 50)
+                    billboard.ExtentsOffset = Vector3.new(0, 3, 0)
+                    local label = Instance.new("TextLabel", billboard)
+                    label.Size = UDim2.new(1, 0, 1, 0)
+                    label.BackgroundTransparency = 1
+                    label.TextColor3 = Color3.fromRGB(255, 20, 147) -- Rosa Choque
+                    label.TextStrokeTransparency = 0
+                    label.Font = Enum.Font.GothamBold
+                    label.TextSize = 14
+                    label.Text = p.Name
                 end
-            elseif hl then hl:Destroy() end
+            else
+                if billboard then billboard:Destroy() end
+            end
         end
     end
 end)
 
--- LISTA DE TELEPORT
-local function updateTP()
-    for _, c in pairs(content:GetChildren()) do if c.Name == "TPBtn" then c:Destroy() end end
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= lp then
-            local b = Instance.new("TextButton", content)
-            b.Name = "TPBtn"
-            b.Size = UDim2.new(0.9, 0, 0, 30)
-            b.Text = "Ir para: " .. p.DisplayName
-            b.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-            b.TextColor3 = Color3.new(1,1,1)
-            Instance.new("UICorner", b)
-            b.MouseButton1Click:Connect(function()
-                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                    lp.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame
-                end
-            end)
-        end
-    end
-end
-task.spawn(function() while task.wait(5) do updateTP() end end)
-updateTP()
+-- Lógica Minimizar
+minBtn.MouseButton1Click:Connect(function()
+    states.minimizado = not states.minimizado
+    content.Visible = not states.minimizado
+    main:TweenSize(states.minimizado and UDim2.new(0, 250, 0, 40) or UDim2.new(0, 250, 0, 320), "Out", "Quad", 0.3, true)
+    minBtn.Text = states.minimizado and "+" or "-"
+end)
+
+print("SHAROPE KING CARREGADO!")
