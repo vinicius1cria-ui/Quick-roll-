@@ -1,171 +1,146 @@
--- SHAROPE KING - OFFICIAL VERSION
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+-- LocalScript (coloque no StarterPlayerScripts ou StarterGui)
+
+local Players = game:GetService("Players")  
+local RunService = game:GetService("RunService")  
 local UserInputService = game:GetService("UserInputService")
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
 
--- Variáveis de Estado
-local states = {
-    fly = false,
-    flySpeed = 50,
-    walkSpeed = 16,
-    esp = false,
-    minimizado = false
-}
+local espEnabled = true
 
-local bVelo, bGyro
+-- Função para criar um BillboardGui com o nome, HP e time  
+local function createEsp(player)  
+    local character = player.Character or player.CharacterAdded:Wait()  
+    local humanoid = character:WaitForChild("Humanoid")
 
--- Criar Interface
-local sg = Instance.new("ScreenGui")
-sg.Name = "SharopeKing"
-sg.Parent = game:GetService("CoreGui") or player:WaitForChild("PlayerGui")
-sg.ResetOnSpawn = false
+    -- BillboardGui para mostrar info  
+    local billboardGui = Instance.new("BillboardGui")  
+    billboardGui.Name = "PlayerESP"  
+    billboardGui.Adornee = character:FindFirstChild("Head")  
+    billboardGui.Size = UDim2.new(0, 200, 0, 80)  
+    billboardGui.StudsOffset = Vector3.new(0, 3, 0)  
+    billboardGui.AlwaysOnTop = true  
+    billboardGui.MaxDistance = 100
 
--- Janela Principal
-local main = Instance.new("Frame")
-main.Name = "Main"
-main.Size = UDim2.new(0, 250, 0, 320)
-main.Position = UDim2.new(0.5, -125, 0.5, -160)
-main.BackgroundColor3 = Color3.fromRGB(15, 15, 15) -- Preto
-main.BorderSizePixel = 0
-main.Active = true
-main.Draggable = true
-main.Parent = sg
+    -- Frame de fundo  
+    local frame = Instance.new("Frame")  
+    frame.Size = UDim2.new(1, 0, 1, 0)  
+    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)  
+    frame.BackgroundTransparency = 0.3  
+    frame.BorderSizePixel = 0  
+    frame.Parent = billboardGui
 
-local stroke = Instance.new("UIStroke", main)
-stroke.Thickness = 2
-stroke.Color = Color3.fromRGB(200, 0, 0) -- Vermelho
+    -- Nome do jogador  
+    local nameLabel = Instance.new("TextLabel")  
+    nameLabel.Size = UDim2.new(1, 0, 0.33, 0)  
+    nameLabel.Position = UDim2.new(0, 0, 0, 0)  
+    nameLabel.BackgroundTransparency = 1  
+    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)  
+    nameLabel.TextScaled = true  
+    nameLabel.Font = Enum.Font.GothamBold  
+    nameLabel.Text = player.Name  
+    nameLabel.Parent = frame
 
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
+    -- Health bar  
+    local healthBarBg = Instance.new("Frame")  
+    healthBarBg.Size = UDim2.new(0.9, 0, 0.25, 0)  
+    healthBarBg.Position = UDim2.new(0.05, 0, 0.35, 0)  
+    healthBarBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  
+    healthBarBg.BorderSizePixel = 0  
+    healthBarBg.Parent = frame
 
--- Título
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.BackgroundColor3 = Color3.fromRGB(30, 0, 0)
-title.Text = "SHAROPE KING"
-title.TextColor3 = Color3.fromRGB(255, 0, 0)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 18
-title.Parent = main
-Instance.new("UICorner", title).CornerRadius = UDim.new(0, 10)
+    local healthBar = Instance.new("Frame")  
+    healthBar.Size = UDim2.new(1, 0, 1, 0)  
+    healthBar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)  
+    healthBar.BorderSizePixel = 0  
+    healthBar.Parent = healthBarBg
 
--- Botão Minimizar
-local minBtn = Instance.new("TextButton", title)
-minBtn.Size = UDim2.new(0, 30, 0, 30)
-minBtn.Position = UDim2.new(1, -35, 0, 5)
-minBtn.Text = "-"
-minBtn.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
-minBtn.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", minBtn)
+    -- HP Text  
+    local healthLabel = Instance.new("TextLabel")  
+    healthLabel.Size = UDim2.new(1, 0, 1, 0)  
+    healthLabel.BackgroundTransparency = 1  
+    healthLabel.TextColor3 = Color3.fromRGB(0, 0, 0)  
+    healthLabel.TextScaled = true  
+    healthLabel.Font = Enum.Font.GothamSemibold  
+    healthLabel.Text = "HP: " .. math.floor(humanoid.Health) .. "/" .. humanoid.MaxHealth  
+    healthLabel.Parent = healthBarBg
 
--- Container dos Botões
-local content = Instance.new("Frame", main)
-content.Size = UDim2.new(1, 0, 1, -40)
-content.Position = UDim2.new(0, 0, 0, 40)
-content.BackgroundTransparency = 1
+    -- Team label  
+    local teamLabel = Instance.new("TextLabel")  
+    teamLabel.Size = UDim2.new(1, 0, 0.35, 0)  
+    teamLabel.Position = UDim2.new(0, 0, 0.7, 0)  
+    teamLabel.BackgroundTransparency = 1  
+    teamLabel.TextColor3 = Color3.fromRGB(200, 200, 255)  
+    teamLabel.TextScaled = true  
+    teamLabel.Font = Enum.Font.Gotham  
+    teamLabel.Text = "Team: " .. (player.Team and player.Team.Name or "None")  
+    teamLabel.Parent = frame
 
-local layout = Instance.new("UIListLayout", content)
-layout.Padding = UDim.new(0, 5)
-layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    billboardGui.Parent = character:WaitForChild("Head")
 
--- Função para Criar Botão
-local function createBtn(txt, callback)
-    local b = Instance.new("TextButton", content)
-    b.Size = UDim2.new(0, 220, 0, 35)
-    b.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    b.Text = txt
-    b.TextColor3 = Color3.new(1,1,1)
-    b.Font = Enum.Font.GothamSemibold
-    Instance.new("UICorner", b)
-    local s = Instance.new("UIStroke", b)
-    s.Color = Color3.fromRGB(100, 0, 0)
-    b.MouseButton1Click:Connect(function() callback(b) end)
-    return b
+    -- Atualizar informações  
+    humanoid.HealthChanged:Connect(function(newHealth)  
+        if espEnabled then  
+            healthBar.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)  
+            healthBar.BackgroundColor3 = Color3.fromRGB(  
+                math.min(255, (1 - humanoid.Health / humanoid.MaxHealth) * 255),  
+                math.min(255, (humanoid.Health / humanoid.MaxHealth) * 255),  
+                0  
+            )  
+            healthLabel.Text = "HP: " .. math.floor(newHealth) .. "/" .. humanoid.MaxHealth  
+        end  
+    end)
+
+    player.TeamChanged:Connect(function()  
+        teamLabel.Text = "Team: " .. (player.Team and player.Team.Name or "None")  
+    end)
+
+    -- Remover ESP quando o jogador sair ou morrer (despawn)  
+    player.CharacterRemoving:Connect(function()  
+        billboardGui:Destroy()  
+    end)  
 end
 
--- 1. FUNÇÃO VOO
-local flyB = createBtn("VOAR: OFF", function(self)
-    states.fly = not states.fly
-    local root = player.Character:FindFirstChild("HumanoidRootPart")
-    if states.fly then
-        self.Text = "VOAR: ON"
-        self.TextColor3 = Color3.new(0,1,0)
-        bVelo = Instance.new("BodyVelocity", root)
-        bVelo.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        bGyro = Instance.new("BodyGyro", root)
-        bGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-        task.spawn(function()
-            while states.fly do
-                bVelo.Velocity = workspace.CurrentCamera.CFrame.LookVector * states.flySpeed
-                bGyro.CFrame = workspace.CurrentCamera.CFrame
-                task.wait()
-            end
-            if bVelo then bVelo:Destroy() end
-            if bGyro then bGyro:Destroy() end
-        end)
-    else
-        self.Text = "VOAR: OFF"
-        self.TextColor3 = Color3.new(1,1,1)
-    end
+-- Aplicar ESP em todos os jogadores atuais  
+for _, player in ipairs(Players:GetPlayers()) do  
+    if player ~= Players.LocalPlayer then  
+        if player.Character then  
+            createEsp(player)  
+        end  
+        player.CharacterAdded:Connect(function()  
+            task.wait(0.5)  
+            createEsp(player)  
+        end)  
+    end  
+end
+
+-- Quando um novo jogador entrar  
+Players.PlayerAdded:Connect(function(player)  
+    player.CharacterAdded:Connect(function()  
+        task.wait(0.5)  
+        createEsp(player)  
+    end)  
 end)
 
-createBtn("VELO VOO +", function() states.flySpeed = states.flySpeed + 20 end)
-createBtn("VELO VOO -", function() states.flySpeed = math.max(10, states.flySpeed - 20) end)
-
--- 2. FUNÇÃO CORRER
-createBtn("CORRER +", function() 
-    states.walkSpeed = states.walkSpeed + 20
-    player.Character.Humanoid.WalkSpeed = states.walkSpeed
+-- Toggle com tecla (ex: F6 liga/desliga)  
+UserInputService.InputBegan:Connect(function(input, processed)  
+    if processed then return end  
+    if input.KeyCode == Enum.KeyCode.F6 then  
+        espEnabled = not espEnabled  
+        for _, player in ipairs(Players:GetPlayers()) do  
+            if player ~= Players.LocalPlayer then  
+                local char = player.Character  
+                if char then  
+                    local esp = char:FindFirstChild(" Head") and char.Head:FindFirstChild("PlayerESP")  
+                    if esp then  
+                        esp.Enabled = espEnabled  
+                    end  
+                end  
+            end  
+        end  
+        print("ESP " .. (espEnabled and "ligado" or "desligado"))  
+    end  
 end)
 
-createBtn("CORRER -", function() 
-    states.walkSpeed = math.max(16, states.walkSpeed - 20)
-    player.Character.Humanoid.WalkSpeed = states.walkSpeed
-end)
-
--- 3. FUNÇÃO ESP ROSA
-createBtn("ESP ROSA: OFF", function(self)
-    states.esp = not states.esp
-    self.Text = states.esp and "ESP ROSA: ON" or "ESP ROSA: OFF"
-    self.TextColor3 = states.esp and Color3.fromRGB(255, 105, 180) or Color3.new(1,1,1)
-end)
-
--- Loop do ESP
-RunService.RenderStepped:Connect(function()
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= player and p.Character and p.Character:FindFirstChild("Head") then
-            local head = p.Character.Head
-            local billboard = head:FindFirstChild("KingESP")
-            if states.esp then
-                if not billboard then
-                    billboard = Instance.new("BillboardGui", head)
-                    billboard.Name = "KingESP"
-                    billboard.AlwaysOnTop = true
-                    billboard.Size = UDim2.new(0, 100, 0, 50)
-                    billboard.ExtentsOffset = Vector3.new(0, 3, 0)
-                    local label = Instance.new("TextLabel", billboard)
-                    label.Size = UDim2.new(1, 0, 1, 0)
-                    label.BackgroundTransparency = 1
-                    label.TextColor3 = Color3.fromRGB(255, 20, 147) -- Rosa Choque
-                    label.TextStrokeTransparency = 0
-                    label.Font = Enum.Font.GothamBold
-                    label.TextSize = 14
-                    label.Text = p.Name
-                end
-            else
-                if billboard then billboard:Destroy() end
-            end
-        end
-    end
-end)
-
--- Lógica Minimizar
-minBtn.MouseButton1Click:Connect(function()
-    states.minimizado = not states.minimizado
-    content.Visible = not states.minimizado
-    main:TweenSize(states.minimizado and UDim2.new(0, 250, 0, 40) or UDim2.new(0, 250, 0, 320), "Out", "Quad", 0.3, true)
-    minBtn.Text = states.minimizado and "+" or "-"
-end)
-
-print("SHAROPE KING CARREGADO!")
+-- Remover ESP quando sair do jogo ou reset  
+game:BindToClose(function()  
+    -- Limpar tudo  
+end)  
