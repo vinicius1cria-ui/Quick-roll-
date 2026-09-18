@@ -1,13 +1,13 @@
-LocalScript (coloque no StarterPlayerScripts ou StarterGui)
--- ESP DARKzZz
+-- LocalScript (StarterPlayerScripts ou StarterGui)
+-- ESP DARKzZz (corrigido)
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 
 local espEnabled = true
-local espObjects = {}
+local espObjects = {} -- [player] = { gui, connections = {} }
 
--- Util: criar gradiente
+-- Util: gradiente
 local function makeGradient(color1, color2, rotation)
 	local grad = Instance.new("UIGradient")
 	grad.Color = ColorSequence.new(color1, color2)
@@ -20,6 +20,26 @@ local function makeCorner(radius)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, radius or 8)
 	return corner
+end
+
+-- Limpa completamente o ESP de um jogador (destroi GUI e desconecta events)
+local function clearEsp(player)
+	local esp = espObjects[player]
+	if not esp then return end
+
+	-- Desconecta TODOS os eventos para evitar vazamento de memória
+	for _, conn in ipairs(esp.connections) do
+		if typeof(conn) == "Instance" and conn.Connected then
+			conn:Disconnect()
+		end
+	end
+
+	-- Destroi a GUI com segurança
+	if esp.billboardGui and esp.billboardGui.Parent then
+		esp.billboardGui:Destroy()
+	end
+
+	espObjects[player] = nil
 end
 
 -- ===== MENU =====
@@ -38,7 +58,6 @@ local C_TEXT = Color3.fromRGB(235, 235, 245)
 local C_ON = Color3.fromRGB(120, 255, 140)
 local C_OFF = Color3.fromRGB(255, 90, 90)
 
--- Botão para abrir quando minimizado
 local openButton = Instance.new("TextButton")
 openButton.Size = UDim2.new(0, 140, 0, 38)
 openButton.Position = UDim2.new(0, 12, 0, 12)
@@ -52,7 +71,6 @@ openButton.Parent = screenGui
 makeCorner(10).Parent = openButton
 makeGradient(C_ACCENT2, C_BG, 90).Parent = openButton
 
--- Painel principal
 local menuFrame = Instance.new("Frame")
 menuFrame.Size = UDim2.new(0, 240, 0, 150)
 menuFrame.Position = UDim2.new(0, 12, 0, 12)
@@ -62,7 +80,6 @@ menuFrame.Parent = screenGui
 makeCorner(12).Parent = menuFrame
 makeGradient(C_BG2, C_BG, 90).Parent = menuFrame
 
--- Borda accent superior
 local topBar = Instance.new("Frame")
 topBar.Size = UDim2.new(1, 0, 0, 4)
 topBar.BackgroundColor3 = C_ACCENT
@@ -70,7 +87,6 @@ topBar.BorderSizePixel = 0
 topBar.Parent = menuFrame
 makeGradient(C_ACCENT, C_ACCENT2, 0).Parent = topBar
 
--- Título
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -40, 0, 34)
 title.Position = UDim2.new(0, 10, 0, 6)
@@ -82,7 +98,6 @@ title.TextXAlignment = Enum.TextXAlignment.Left
 title.Text = "⛧ DARKzZz ESP"
 title.Parent = menuFrame
 
--- Botão Minimizar
 local minimizeBtn = Instance.new("TextButton")
 minimizeBtn.Size = UDim2.new(0, 28, 0, 28)
 minimizeBtn.Position = UDim2.new(1, -34, 0, 8)
@@ -94,7 +109,6 @@ minimizeBtn.Text = "—"
 minimizeBtn.Parent = menuFrame
 makeCorner(8).Parent = minimizeBtn
 
--- Botão Ligar/Desligar
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Size = UDim2.new(0.92, 0, 0, 38)
 toggleBtn.Position = UDim2.new(0.04, 0, 0, 48)
@@ -107,7 +121,6 @@ toggleBtn.Parent = menuFrame
 makeCorner(10).Parent = toggleBtn
 makeGradient(C_ACCENT2, C_BG2, 90).Parent = toggleBtn
 
--- Indicador de estado
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(0.92, 0, 0, 28)
 statusLabel.Position = UDim2.new(0.04, 0, 0, 96)
@@ -119,7 +132,6 @@ statusLabel.Text = "  ● Status: Ativo"
 statusLabel.Parent = menuFrame
 makeCorner(8).Parent = statusLabel
 
--- Footer version
 local footer = Instance.new("TextLabel")
 footer.Size = UDim2.new(1, 0, 0, 18)
 footer.Position = UDim2.new(0, 0, 1, -20)
@@ -127,10 +139,9 @@ footer.BackgroundTransparency = 1
 footer.TextColor3 = C_ACCENT
 footer.TextScaled = true
 footer.Font = Enum.Font.Gotham
-footer.Text = "v1.0  •  by DARKzZz"
+footer.Text = "v1.1  •  by DARKzZz"
 footer.Parent = menuFrame
 
--- Atualiza visuals do menu
 local function updateMenu()
 	if espEnabled then
 		toggleBtn.Text = "ESP: LIGADO"
@@ -145,7 +156,9 @@ local function updateMenu()
 	end
 
 	for _, esp in pairs(espObjects) do
-		esp.frame.Visible = espEnabled
+		if esp.frame then
+			esp.frame.Visible = espEnabled
+		end
 	end
 end
 
@@ -166,10 +179,17 @@ end)
 
 -- ===== ESP =====
 local function createEsp(player)
-	local character = player.Character or player.CharacterAdded:Wait()
+	-- Limpa qualquer ESP anterior deste jogador (evita duplicação ao respawar)
+	clearEsp(player)
+
+	local character = player.Character
+	if not character then return end
+
 	local head = character:FindFirstChild("Head")
-	local humanoid = character:WaitForChild("Humanoid")
+	local humanoid = character:FindFirstChildWhichIsA("Humanoid")
 	if not head or not humanoid then return end
+
+	local connections = {}
 
 	local billboardGui = Instance.new("BillboardGui")
 	billboardGui.Name = "DARKzZzESP"
@@ -221,7 +241,7 @@ local function createEsp(player)
 	healthLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
 	healthLabel.TextScaled = true
 	healthLabel.Font = Enum.Font.GothamSemibold
-	healthLabel.Text = "HP: " .. math.floor(humanoid.Health) .. "/" .. humanoid.MaxHealth
+	healthLabel.Text = "HP: " .. math.floor(humanoid.Health) .. "/" .. math.floor(humanoid.MaxHealth)
 	healthLabel.Parent = healthBarBg
 
 	local teamLabel = Instance.new("TextLabel")
@@ -234,64 +254,71 @@ local function createEsp(player)
 	teamLabel.Text = "Team: " .. (player.Team and player.Team.Name or "None")
 	teamLabel.Parent = frame
 
-	espObjects[player.Name] = {
+	espObjects[player] = {
 		billboardGui = billboardGui,
 		frame = frame,
 		nameLabel = nameLabel,
 		healthBar = healthBar,
 		healthBarBg = healthBarBg,
 		healthLabel = healthLabel,
-		teamLabel = teamLabel
+		teamLabel = teamLabel,
+		connections = connections,
 	}
 
-	humanoid.HealthChanged:Connect(function(newHealth)
+	-- Atualiza barra de vida (conexao armazenada para limpeza)
+	table.insert(connections, humanoid.HealthChanged:Connect(function(newHealth)
 		if not espEnabled then return end
-		local ratio = math.clamp(newHealth / humanoid.MaxHealth, 0, 1)
+		local maxHealth = humanoid.MaxHealth
+		if maxHealth <= 0 then return end
+		local ratio = math.clamp(newHealth / maxHealth, 0, 1)
 		healthBar.Size = UDim2.new(ratio, 0, 1, 0)
 		healthBar.BackgroundColor3 = Color3.fromRGB(
 			math.floor((1 - ratio) * 255),
 			math.floor(ratio * 255),
 			0
 		)
-		healthLabel.Text = "HP: " .. math.floor(newHealth) .. "/" .. math.floor(humanoid.MaxHealth)
-	end)
+		healthLabel.Text = "HP: " .. math.floor(newHealth) .. "/" .. math.floor(maxHealth)
+	end))
 
-	player.TeamChanged:Connect(function()
+	-- Atualiza time (conexao armazenada para limpeza)
+	table.insert(connections, player.TeamChanged:Connect(function()
 		teamLabel.Text = "Team: " .. (player.Team and player.Team.Name or "None")
-	end)
+	end))
 
-	player.CharacterRemoving:Connect(function()
-		if espObjects[player.Name] then
-			espObjects[player.Name].billboardGui:Destroy()
-			espObjects[player.Name] = nil
-		end
-	end)
+	-- Limpa ESP quando o personagem for removido (desconecta tudo)
+	table.insert(connections, player.CharacterRemoving:Connect(function()
+		clearEsp(player)
+	end))
 end
 
 local function applyEspSafe(player)
 	if player == Players.LocalPlayer then return end
-	pcall(function()
-		if player.Character then
-			createEsp(player)
-		end
-		player.CharacterAdded:Connect(function()
-			task.wait(0.5)
-			pcall(function()
-				createEsp(player)
-			end)
-		end)
+
+	-- Conecta CharacterAdded UMA vez por jogador
+	player.CharacterAdded:Connect(function()
+		task.wait(0.5)
+		pcall(createEsp, player)
 	end)
+
+	-- Se já tiver personagem agora, cria imediatamente
+	if player.Character then
+		task.wait(0.5)
+		pcall(createEsp, player)
+	end
 end
 
+-- Aplicar ESP em jogadores atuais
 for _, player in ipairs(Players:GetPlayers()) do
 	applyEspSafe(player)
 end
 
-Players.PlayerAdded:Connect(function(player)
-	applyEspSafe(player)
-end)
+-- Quando novo jogador entrar
+Players.PlayerAdded:Connect(applyEspSafe)
 
--- Atalho RightControl continua funcionando
+-- Limpa ESP quando um jogador sair do jogo
+Players.PlayerRemoving:Connect(clearEsp)
+
+-- Atalho RightControl
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then return end
 	if input.KeyCode == Enum.KeyCode.RightControl then
